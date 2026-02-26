@@ -381,13 +381,12 @@ function FloatingSword({ theme }) {
   // Single animation loop — runs once, never restarts
   useEffect(() => {
     const el = swordRef.current;
-    if (!el) return;
+    if (!el || loopStarted.current) return;
     loopStarted.current = true;
     runningRef.current = true;
 
     let frameCount = 0;
 
-    let rafId = null;
     const tick = () => {
       if (!runningRef.current) return;
       frameCount++;
@@ -464,15 +463,11 @@ function FloatingSword({ theme }) {
       el.style.opacity = `${(isMobile ? 0.5 : 0.8) * fadeOut}`;
       el.style.transform = `translateX(-50%) translateY(${smooth.current.yOffset + idleBob}px) rotate(${smooth.current.spin + smooth.current.rotation}deg)`;
 
-      rafId = requestAnimationFrame(tick);
+      requestAnimationFrame(tick);
     };
-    rafId = requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
 
-    return () => {
-    runningRef.current = false;
-    if (rafId) cancelAnimationFrame(rafId);
-    loopStarted.current = false; // allow restart in StrictMode dev
-  };
+    return () => { runningRef.current = false; };
   }, []);
 
   // ── Theme-aware Fireblade colors ──
@@ -777,31 +772,61 @@ function Reveal({ children, delay = 0, direction = "up" }) {
         opacity: visible ? 1 : 0,
         transform: visible ? "translate(0) scale(1)" : transforms[direction],
         transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
+        willChange: "transform, opacity",
       }}
     >
-      {children}
+      {/* NEW: inner wrapper so child (card) can use its own transform animations */}
+      <div style={{ transform: "translateZ(0)" }}>
+        {children}
+      </div>
     </div>
   );
 }
 
 // ── Skill Bar ──
-function SkillBar({ label, level, color, delay = 0 }) {
+function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
   const [ref, visible] = useScrollReveal();
-  return (
-    <div ref={ref} style={{ marginBottom: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem", color: "var(--text)" }}>{label}</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color }}>{level}%</span>
-      </div>
+
+return (
+  <div ref={ref} style={{ marginBottom: "1.25rem" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginBottom: "0.4rem",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "0.9rem",
+          color: "var(--text)",
+        }}
+      >
+        {label}
+      </span>
+
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.72rem",
+          color: `rgb(${rgbVar})`,
+        }}
+      >
+        {level}%
+      </span>
+    </div>
+
       <div style={{ height: "6px", background: "var(--proficiency-track)", borderRadius: "3px", overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
             width: visible ? `${level}%` : "0%",
-            background: `linear-gradient(90deg, ${color}, ${color}88)`,
+            background: `linear-gradient(90deg, rgba(${rgbVar}, 1), rgba(${rgbVar}, 0.55))`,
             borderRadius: "3px",
             transition: `width 1.2s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
-            boxShadow: visible ? `0 0 12px ${color}44` : "none",
+            boxShadow: visible ? `0 0 12px rgba(${rgbVar}, 0.35)` : "none",
+            willChange: "width",
           }}
         />
       </div>
@@ -862,27 +887,30 @@ export default function App() {
 
   // ── Data ──
   const skillCategories = [
-    { title: "Electrical", Icon: Icons.Bolt, color: "var(--yellow)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "Load Calculations", "Residential Wiring", "Panel Layout"] },
-    { title: "Cybersecurity", Icon: Icons.Shield, color: "var(--neon)", items: ["Network Hardening", "Firewall Config", "Intrusion Detection", "SSH Security", "DNS Filtering", "System Auditing"] },
-    { title: "Development", Icon: Icons.Code, color: "var(--orange)", items: ["React", "JavaScript", "HTML/CSS", "Supabase", "REST APIs", "Git"] },
-    { title: "Linux & Systems", Icon: Icons.Terminal, color: "var(--purple)", items: ["Kali Linux", "Ubuntu", "Bash Scripting", "Raspberry Pi", "Server Admin", "Docker Basics"] },
-    { title: "Networking", Icon: Icons.Network, color: "var(--blue)", items: ["DNS Config", "AdGuard Home", "Firewall Rules", "VPN", "Port Security", "Traffic Analysis"] },
-    { title: "Hardware", Icon: Icons.Gear, color: "var(--pink)", items: ["PC Building", "GPU Tuning", "Motorcycle Builds", "Soldering", "Raspberry Pi", "LCD Integration"] },
+    { title: "DevOps & CI/CD", Icon: Icons.Gear, color: "var(--neon)", items: ["Jenkins", "GitHub Actions", "CI/CD Pipelines", "Automation", "Prometheus", "Monitoring"] },
+    { title: "Cloud & IaC", Icon: Icons.Network, color: "var(--blue)", items: ["Terraform", "AWS VPC", "Infrastructure as Code", "Cloud Deployments", "Docker", "Scalable Systems"] },
+    { title: "Development", Icon: Icons.Code, color: "var(--orange)", items: ["React", "JavaScript", "Python", "HTML/CSS", "Supabase", "REST APIs"] },
+    { title: "Linux & Systems", Icon: Icons.Terminal, color: "var(--purple)", items: ["Kali Linux", "Ubuntu", "Bash Scripting", "Raspberry Pi", "Server Admin", "Docker"] },
+    { title: "Cybersecurity", Icon: Icons.Shield, color: "var(--yellow)", items: ["Network Hardening", "Firewall Config", "SSH Security", "DNS Filtering", "Fail2ban", "System Auditing"] },
+    { title: "Electrical & IoT", Icon: Icons.Bolt, color: "var(--pink)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "ESP8266", "IoT Sensors", "Panel Layout"] },
   ];
 
   const projects = [
-    { title: "NoteStream", tag: "FEATURED", tagColor: "var(--neon)", desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.", tech: ["React", "Supabase", "AI", "Edge Functions", "RLS"], featured: true },
-    { title: "Pi Security Dashboard", tag: "SECURITY", tagColor: "var(--orange)", desc: "Web monitoring dashboard for a Raspberry Pi 4 running Kali Linux. SSH key auth, fail2ban, UFW, portsentry, and external storage integration.", tech: ["Kali", "Fail2ban", "UFW", "SSH", "Python"] },
-    { title: "AdGuard DNS Filter", tag: "NETWORK", tagColor: "var(--purple)", desc: "Network-wide DNS filtering with AdGuard Home on Raspberry Pi. Blocks ads and trackers across every device on the home network.", tech: ["AdGuard", "DNS", "Raspberry Pi", "DHCP"] },
-    { title: "Pixel 6 Pro Hardening", tag: "MOBILE", tagColor: "var(--blue)", desc: "Rooted and hardened a Pixel 6 Pro with AFWall+ firewall, custom security policies, and network-level protections for maximum privacy.", tech: ["Android", "AFWall+", "Root", "Magisk"] },
-    { title: "Custom Bobber Build", tag: "HARDWARE", tagColor: "var(--pink)", desc: "Designing and fabricating a custom bobber motorcycle from a Suzuki Intruder — engine work, frame mods, and custom electrical wiring.", tech: ["Fabrication", "Wiring", "Engine", "Design"] },
+    { title: "NoteStream", tag: "FEATURED", tagColor: "var(--neon)", desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.", tech: ["React", "Supabase", "AI", "Edge Functions"], featured: true, href: "https://github.com/blackapple805/notestream-site" },
+    { title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)", desc: "Personal portfolio and cloud landing page at questone.cloud. Built to showcase DevOps projects, infrastructure work, and professional presence.", tech: ["React", "JavaScript", "CSS", "Deployment"], href: "https://github.com/blackapple805/questone-site" },
+    { title: "IoT Log", tag: "IOT", tagColor: "var(--pink)", desc: "ESP8266-based IoT data pipeline that uploads JSON sensor data directly to GitHub. Hardware meets version control for lightweight cloud logging.", tech: ["ESP8266", "JavaScript", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log" },
+    { title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)", desc: "Forked and customized Terraform module for provisioning AWS VPC resources. Infrastructure as code for scalable, repeatable cloud networking.", tech: ["Terraform", "AWS", "HCL", "IaC"], href: "https://github.com/blackapple805/terraform-aws-vpc" },
+    { title: "Prometheus", tag: "MONITORING", tagColor: "var(--neon)", desc: "Working with the Prometheus monitoring and alerting toolkit. Metrics collection, dashboards, and infrastructure observability at scale.", tech: ["Prometheus", "Monitoring", "Metrics", "Alerting"], href: "https://github.com/blackapple805/prometheus" },
+    { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Forked Jenkins automation server — exploring pipeline configuration, plugin development, and continuous integration/deployment workflows.", tech: ["Jenkins", "Java", "CI/CD", "Automation"], href: "https://github.com/blackapple805/jenkins" },
+    { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Jenkins JUnit plugin for test result reporting. Understanding plugin architecture and integrating automated testing into CI pipelines.", tech: ["Java", "Jenkins", "JUnit", "Plugins"], href: "https://github.com/blackapple805/junit-plugin" },
+    { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "A collection of projects and prototypes in Python — showcasing scripting, automation, and problem-solving across different domains.", tech: ["Python", "Scripting", "Automation"], href: "https://github.com/blackapple805/Projects" },
   ];
 
   const education = [
     { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry." },
-    { status: "Ongoing", title: "Cybersecurity — Self-Directed", desc: "Hands-on learning through building intrusion detection systems, configuring firewalls and fail2ban, hardening Linux servers, and creating security monitoring dashboards on Raspberry Pi." },
-    { status: "Ongoing", title: "Full-Stack Web Development", desc: "Learning React, JavaScript, database design with Supabase, API integration, and deployment through building real applications like NoteStream with auth, subscriptions, and AI features." },
-    { status: "Ongoing", title: "Linux & System Administration", desc: "Deep-diving into Kali Linux, Ubuntu server management, shell scripting, service configuration, and embedded systems through Raspberry Pi projects and home lab setups." },
+    { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization. Building real infrastructure for real deployments." },
+    { status: "Ongoing", title: "Full-Stack Web Development", desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows." },
+    { status: "Ongoing", title: "Linux, Security & IoT", desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards." },
   ];
 
   const contactIcons = {
@@ -899,7 +927,7 @@ export default function App() {
     { iconKey: "GitHub", label: "GitHub", value: "github.com/blackapple805", href: "https://github.com/blackapple805" },
     { iconKey: "WhatsApp", label: "WhatsApp", value: "(805) 676-8875", href: "https://wa.me/18056768875" },
     { iconKey: "Instagram", label: "Instagram", value: "@quest.on.a.dream", href: "https://instagram.com/quest.on.a.dream" },
-    { iconKey: "LinkedIn", label: "LinkedIn", value: "Connect with me", href: "https://linkedin.com" },
+    { iconKey: "LinkedIn", label: "LinkedIn", value: "in/eric-del-angel", href: "https://www.linkedin.com/in/eric-del-angel/" },
     { iconKey: "Location", label: "Location", value: "United States", href: null },
   ];
 
@@ -931,8 +959,12 @@ export default function App() {
             </g>
           </svg>
         </div>
-        <button className="mobile-toggle" onClick={() => setMobileNav(!mobileNav)}>
-          {mobileNav ? "✕" : "☰"}
+        <button className={`mobile-toggle ${mobileNav ? "open" : ""}`} onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle menu">
+          <svg width="22" height="18" viewBox="0 0 22 18" fill="none" className="hamburger-icon">
+            <line className="ham-line ham-top" x1="1" y1="2" x2="21" y2="2" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+            <line className="ham-line ham-mid" x1="1" y1="9" x2="21" y2="9" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+            <line className="ham-line ham-bot" x1="1" y1="16" x2="21" y2="16" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </button>
         <div className={`nav-links ${mobileNav ? "open" : ""}`}>
           {SECTIONS.filter((s) => s !== "home").map((s) => (
@@ -964,7 +996,7 @@ export default function App() {
           </h1>
 
           <p className="hero-sub" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s" }}>
-            Aspiring electrician blending hands-on trade skills with cybersecurity expertise, web development, and a love for building things that work — from panels to pixels.
+            Aspiring electrician and DevOps engineer blending hands-on trade skills with cloud infrastructure, CI/CD automation, and a love for building things that work — from panels to pipelines.
           </p>
 
           <div className="hero-actions" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s" }}>
@@ -992,16 +1024,16 @@ export default function App() {
         <div className="about-grid">
           <Reveal delay={100}>
             <div className="about-text">
-              <p>I'm <strong>Eric</strong> — a hands-on builder with a drive to understand how things work at every level. I'm currently preparing for an <strong>electrical apprenticeship</strong>, studying NEC code, circuit theory, and conduit bending through technical references and real-world practice.</p>
-              <p>But my curiosity doesn't stop at the breaker panel. I'm deep into <strong>cybersecurity</strong> — hardening Linux servers, configuring firewalls, and building monitoring dashboards. I also build <strong>web applications</strong> from scratch with React, Supabase, and modern tooling.</p>
+              <p>I'm <strong>Eric</strong> — a DevOps and IT Infrastructure Engineer with a drive to understand how things work at every level. I'm focused on <strong>automation, monitoring, and secure cloud deployments</strong>, building efficient CI/CD pipelines and scalable systems. I'm also preparing for an <strong>electrical apprenticeship</strong>, studying NEC code, circuit theory, and conduit bending.</p>
+              <p>My work spans <strong>infrastructure as code</strong> with Terraform, container orchestration, Jenkins automation, and Prometheus monitoring. I build <strong>web applications</strong> from scratch with React and Supabase, and I'm deep into <strong>IoT</strong> — shipping ESP8266 sensor data directly to GitHub.</p>
               <p>Outside of work, I'm building a <strong>custom bobber motorcycle</strong> from a Suzuki Intruder and playing guitar. I believe the best way to learn anything is to get your hands dirty and figure it out.</p>
             </div>
           </Reveal>
           <Reveal delay={300}>
             <div className="about-stats">
               <div className="stat-card">
-                <div className="stat-number"><Counter target={5} suffix="+" /></div>
-                <div className="stat-label">Projects Built</div>
+                <div className="stat-number"><Counter target={10} /></div>
+                <div className="stat-label">Repositories</div>
               </div>
               <div className="stat-card">
                 <div className="stat-number"><Counter target={6} /></div>
@@ -1025,7 +1057,7 @@ export default function App() {
         <Reveal>
           <p className="section-label">02 — Skills</p>
           <h2 className="section-title">My Toolkit</h2>
-          <p className="section-desc">A cross-disciplinary toolkit forged through real projects — from pulling wire to writing code to locking down networks.</p>
+          <p className="section-desc">A cross-disciplinary toolkit forged through real projects — from provisioning cloud infrastructure to writing code to wiring panels.</p>
         </Reveal>
         <div className="skills-grid">
           {skillCategories.map((cat, i) => (
@@ -1049,12 +1081,12 @@ export default function App() {
           <div className="proficiency">
             <h3>// Proficiency Levels</h3>
             <div className="prof-grid">
-              <SkillBar label="Electrical Theory" level={70} color="var(--yellow)" delay={0} />
-              <SkillBar label="React / JavaScript" level={65} color="var(--orange)" delay={100} />
-              <SkillBar label="Linux Administration" level={75} color="var(--purple)" delay={200} />
-              <SkillBar label="Network Security" level={72} color="var(--neon)" delay={300} />
-              <SkillBar label="HTML / CSS" level={80} color="var(--blue)" delay={400} />
-              <SkillBar label="Hardware / Builds" level={78} color="var(--pink)" delay={500} />
+            <SkillBar label="Terraform / IaC" level={68} rgbVar="var(--blue-rgb)" delay={0} />
+            <SkillBar label="CI/CD (Jenkins)" level={70} rgbVar="var(--neon-rgb)" delay={100} />
+            <SkillBar label="React / JavaScript" level={65} rgbVar="var(--orange-rgb)" delay={200} />
+            <SkillBar label="Linux Administration" level={75} rgbVar="var(--purple-rgb)" delay={300} />
+            <SkillBar label="Network Security" level={72} rgbVar="var(--yellow-rgb)" delay={400} />
+            <SkillBar label="Electrical Theory" level={70} rgbVar="var(--pink-rgb)" delay={500} />
             </div>
           </div>
         </Reveal>
@@ -1065,17 +1097,18 @@ export default function App() {
         <Reveal>
           <p className="section-label">03 — Projects</p>
           <h2 className="section-title">Things I've Built</h2>
-          <p className="section-desc">Real projects that solve real problems — from full-stack apps to hardened servers to hand-built motorcycles.</p>
+          <p className="section-desc">Real projects solving real problems — from cloud infrastructure and CI/CD pipelines to full-stack apps and IoT data systems.</p>
         </Reveal>
         <div className="projects-grid">
           {projects.map((proj, i) => (
             <Reveal key={proj.title} delay={i * 80}>
-              <div className={`project-card ${proj.featured ? "featured" : ""}`}>
+             <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}
+              style={{ textDecoration: "none", color: "inherit", display: "block", width: "100%" }}>
                 <div>
                   <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>
                     {proj.tag}
                   </span>
-                  <h3>{proj.title}</h3>
+                  <h3>{proj.title} <span style={{ fontSize: "0.7rem", opacity: 0.5, fontWeight: 400 }}>↗</span></h3>
                   <p>{proj.desc}</p>
                   <div className="project-tech">
                     {proj.tech.map((t) => (
@@ -1088,7 +1121,7 @@ export default function App() {
                     <span className="project-preview-text">&lt;NoteStream /&gt;</span>
                   </div>
                 )}
-              </div>
+              </a>
             </Reveal>
           ))}
         </div>
