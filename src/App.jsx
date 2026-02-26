@@ -92,6 +92,38 @@ const Icons = {
       <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={color} fillOpacity="0.1" />
     </svg>
   ),
+  ExternalLink: ({ size = 18, color = "currentColor" }) => (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 3h7v7" />
+      <path d="M10 14L21 3" />
+      <path d="M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+    </svg>
+  ),
+  Check: ({ size = 18, color = "currentColor" }) => (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  ), 
 };
 
 // ── Dragon Hero Image with parallax mouse tracking ──
@@ -307,10 +339,34 @@ export default function App() {
   ];
 
   const education = [
-    { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry." },
-    { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization." },
-    { status: "Ongoing", title: "Full-Stack Web Development", desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows." },
-    { status: "Ongoing", title: "Linux, Security & IoT", desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards." },
+    {
+      status: "In Progress",
+      title: "Electrical Apprenticeship Prep",
+      desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry.",
+      Icon: Icons.Bolt,
+      iconColor: "var(--pink)",
+    },
+    {
+      status: "Ongoing",
+      title: "DevOps & Cloud Infrastructure",
+      desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization.",
+      Icon: Icons.Gear,
+      iconColor: "var(--neon)",
+    },
+    {
+      status: "Ongoing",
+      title: "Full-Stack Web Development",
+      desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows.",
+      Icon: Icons.Code,
+      iconColor: "var(--orange)",
+    },
+    {
+      status: "Ongoing",
+      title: "Linux, Security & IoT",
+      desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards.",
+      Icon: Icons.Terminal,
+      iconColor: "var(--purple)",
+    },
   ];
 
   const contactIcons = { Email: Icons.Mail, GitHub: Icons.GitHub, WhatsApp: Icons.Phone, Instagram: Icons.Instagram, LinkedIn: Icons.LinkedIn, Location: Icons.MapPin };
@@ -473,7 +529,7 @@ export default function App() {
       </section>
 
       {/* PROJECTS */}
-      <section className="section" id="projects">
+      <section className="section is-centered" id="projects">
         <Reveal>
           <p className="section-label">03 — Projects</p>
           <h2 className="section-title">Things I've Built</h2>
@@ -485,7 +541,12 @@ export default function App() {
               <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}>
                 <div>
                   <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>{proj.tag}</span>
-                  <h3>{proj.title} <span className="arrow-icon">↗</span></h3>
+                 <h3 className="project-title">
+                  <span>{proj.title}</span>
+                  <span className="arrow-icon" aria-hidden="true">
+                    <Icons.ExternalLink size={16} color="currentColor" />
+                  </span>
+                 </h3>
                   <p>{proj.desc}</p>
                   <div className="project-tech">{proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}</div>
                 </div>
@@ -501,20 +562,32 @@ export default function App() {
         <Reveal>
           <p className="section-label">04 — Education</p>
           <h2 className="section-title">Never Stop Learning</h2>
-          <p className="section-desc">A mix of structured study and relentless self-teaching across electrical, security, and development.</p>
+          <p className="section-desc">
+            A mix of structured study and relentless self-teaching across electrical,
+            security, and development.
+          </p>
         </Reveal>
-        <div className="edu-timeline">
-          {education.map((edu, i) => (
-            <Reveal key={edu.title} delay={i * 120}>
-              <div className="edu-item">
-                <div className="edu-dot"><div className="edu-dot-inner" /></div>
-                <div className="edu-meta">{edu.status}</div>
-                <h3>{edu.title}</h3>
-                <p>{edu.desc}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+          <div className="edu-timeline">
+            {education.map((edu, i) => (
+              <Reveal key={edu.title} delay={i * 120}>
+                <div className="edu-item">
+                  <div className="edu-rail" aria-hidden="true">
+                    <div className="edu-dot">
+                      <div className="edu-dot-inner">
+                        {edu.Icon ? <edu.Icon size={14} color={edu.iconColor || "var(--neon)"} /> : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="edu-card">
+                    <div className="edu-meta">{edu.status}</div>
+                    <h3>{edu.title}</h3>
+                    <p>{edu.desc}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
       </section>
 
       {/* CONTACT */}
