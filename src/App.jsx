@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-
+import "./index.css";
+import { useState, useEffect, useRef } from "react";
 // ═══════════════════════════════════════════════════════
 //  ERIC — Creative Resume Site
-//  Aesthetic: Industrial Neon / Circuit Board meets Terminal
+//  Theme: Dark / Light toggle
+//  Fonts: Sora (display) + Crimson Pro (body) + IBM Plex Mono
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
 
 // ── Particle Canvas Background ──
-function ParticleField() {
+function ParticleField({ theme }) {
   const canvasRef = useRef(null);
   const particles = useRef([]);
   const mouse = useRef({ x: -1000, y: -1000 });
@@ -20,6 +21,7 @@ function ParticleField() {
     let w = (canvas.width = window.innerWidth);
     let h = (canvas.height = window.innerHeight);
 
+    const isDark = theme === "dark";
     const COUNT = 80;
     particles.current = Array.from({ length: COUNT }, () => ({
       x: Math.random() * w,
@@ -27,8 +29,12 @@ function ParticleField() {
       vx: (Math.random() - 0.5) * 0.4,
       vy: (Math.random() - 0.5) * 0.4,
       r: Math.random() * 2 + 0.5,
-      color: Math.random() > 0.7 ? "#00ffc8" : Math.random() > 0.5 ? "#ff6b35" : "#334455",
+      color: isDark
+        ? (Math.random() > 0.7 ? "#00ffc8" : Math.random() > 0.5 ? "#ff6b35" : "#334455")
+        : (Math.random() > 0.7 ? "#0d8a6a" : Math.random() > 0.5 ? "#d4541e" : "#c8c5bc"),
     }));
+
+    const lineColor = isDark ? [0, 255, 200] : [13, 138, 106];
 
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
@@ -40,7 +46,6 @@ function ParticleField() {
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
 
-        // mouse repulsion
         const dx = p.x - mouse.current.x;
         const dy = p.y - mouse.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -54,7 +59,6 @@ function ParticleField() {
         ctx.fillStyle = p.color;
         ctx.fill();
 
-        // draw connections
         for (let j = i + 1; j < pts.length; j++) {
           const p2 = pts[j];
           const d = Math.hypot(p.x - p2.x, p.y - p2.y);
@@ -62,7 +66,8 @@ function ParticleField() {
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(0, 255, 200, ${0.08 * (1 - d / 120)})`;
+            const alpha = (isDark ? 0.08 : 0.12) * (1 - d / 120);
+            ctx.strokeStyle = `rgba(${lineColor[0]},${lineColor[1]},${lineColor[2]},${alpha})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -88,7 +93,7 @@ function ParticleField() {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouse);
     };
-  }, []);
+  }, [theme]);
 
   return (
     <canvas
@@ -107,7 +112,7 @@ function ParticleField() {
 }
 
 // ── Typewriter Effect ──
-function Typewriter({ text, speed = 50, delay = 0, className = "", onDone }) {
+function Typewriter({ text, speed = 50, delay = 0 }) {
   const [displayed, setDisplayed] = useState("");
   const [started, setStarted] = useState(false);
 
@@ -121,16 +126,14 @@ function Typewriter({ text, speed = 50, delay = 0, className = "", onDone }) {
     if (displayed.length < text.length) {
       const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), speed);
       return () => clearTimeout(t);
-    } else if (onDone) {
-      onDone();
     }
-  }, [displayed, started, text, speed, onDone]);
+  }, [displayed, started, text, speed]);
 
   return (
-    <span className={className}>
+    <span>
       {displayed}
       {displayed.length < text.length && started && (
-        <span style={{ animation: "blink 0.8s step-end infinite", color: "#00ffc8" }}>▌</span>
+        <span style={{ animation: "blink 0.8s step-end infinite", color: "var(--neon)" }}>▌</span>
       )}
     </span>
   );
@@ -180,16 +183,16 @@ function Counter({ target, suffix = "", duration = 2000 }) {
 }
 
 // ── Glitch Text ──
-function GlitchText({ children, tag: Tag = "span" }) {
+function GlitchText({ children }) {
   return (
-    <Tag className="glitch" data-text={children}>
+    <span className="glitch" data-text={children}>
       {children}
-    </Tag>
+    </span>
   );
 }
 
 // ── Magnetic Button ──
-function MagneticButton({ children, href, className = "", onClick }) {
+function MagneticButton({ children, href, className = "" }) {
   const btnRef = useRef(null);
 
   const handleMove = (e) => {
@@ -211,7 +214,6 @@ function MagneticButton({ children, href, className = "", onClick }) {
       className={`magnetic-btn ${className}`}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      onClick={onClick}
       style={{ transition: "transform 0.25s cubic-bezier(0.23, 1, 0.32, 1)" }}
     >
       {children}
@@ -250,10 +252,10 @@ function SkillBar({ label, level, color, delay = 0 }) {
   return (
     <div ref={ref} style={{ marginBottom: "1.25rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem", color: "#c8d6e5" }}>{label}</span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem", color }}>{level}%</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem", color: "var(--text)" }}>{label}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color }}>{level}%</span>
       </div>
-      <div style={{ height: "6px", background: "#1a2332", borderRadius: "3px", overflow: "hidden" }}>
+      <div style={{ height: "6px", background: "var(--proficiency-track)", borderRadius: "3px", overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
@@ -278,6 +280,12 @@ export default function App() {
   const [heroReady, setHeroReady] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [theme, setTheme] = useState("dark");
+
+  // Set theme on document
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 300);
@@ -311,890 +319,46 @@ export default function App() {
     setMobileNav(false);
   };
 
-  // ── Skills Data ──
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  // ── Data ──
   const skillCategories = [
-    {
-      title: "Electrical",
-      icon: "⚡",
-      color: "#ffd93d",
-      items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "Load Calculations", "Residential Wiring", "Panel Layout"],
-    },
-    {
-      title: "Cybersecurity",
-      icon: "🛡️",
-      color: "#00ffc8",
-      items: ["Network Hardening", "Firewall Config", "Intrusion Detection", "SSH Security", "DNS Filtering", "System Auditing"],
-    },
-    {
-      title: "Development",
-      icon: "{ }",
-      color: "#ff6b35",
-      items: ["React", "JavaScript", "HTML/CSS", "Supabase", "REST APIs", "Git"],
-    },
-    {
-      title: "Linux & Systems",
-      icon: "▸_",
-      color: "#a29bfe",
-      items: ["Kali Linux", "Ubuntu", "Bash Scripting", "Raspberry Pi", "Server Admin", "Docker Basics"],
-    },
-    {
-      title: "Networking",
-      icon: "◉",
-      color: "#74b9ff",
-      items: ["DNS Config", "AdGuard Home", "Firewall Rules", "VPN", "Port Security", "Traffic Analysis"],
-    },
-    {
-      title: "Hardware",
-      icon: "⚙",
-      color: "#fd79a8",
-      items: ["PC Building", "GPU Tuning", "Motorcycle Builds", "Soldering", "Raspberry Pi", "LCD Integration"],
-    },
+    { title: "Electrical", icon: "⚡", color: "var(--yellow)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "Load Calculations", "Residential Wiring", "Panel Layout"] },
+    { title: "Cybersecurity", icon: "🛡️", color: "var(--neon)", items: ["Network Hardening", "Firewall Config", "Intrusion Detection", "SSH Security", "DNS Filtering", "System Auditing"] },
+    { title: "Development", icon: "{ }", color: "var(--orange)", items: ["React", "JavaScript", "HTML/CSS", "Supabase", "REST APIs", "Git"] },
+    { title: "Linux & Systems", icon: "▸_", color: "var(--purple)", items: ["Kali Linux", "Ubuntu", "Bash Scripting", "Raspberry Pi", "Server Admin", "Docker Basics"] },
+    { title: "Networking", icon: "◉", color: "var(--blue)", items: ["DNS Config", "AdGuard Home", "Firewall Rules", "VPN", "Port Security", "Traffic Analysis"] },
+    { title: "Hardware", icon: "⚙", color: "var(--pink)", items: ["PC Building", "GPU Tuning", "Motorcycle Builds", "Soldering", "Raspberry Pi", "LCD Integration"] },
   ];
 
   const projects = [
-    {
-      title: "NoteStream",
-      tag: "FEATURED",
-      tagColor: "#00ffc8",
-      desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.",
-      tech: ["React", "Supabase", "AI", "Edge Functions", "RLS"],
-      featured: true,
-    },
-    {
-      title: "Pi Security Dashboard",
-      tag: "SECURITY",
-      tagColor: "#ff6b35",
-      desc: "Web monitoring dashboard for a Raspberry Pi 4 running Kali Linux. SSH key auth, fail2ban, UFW, portsentry, and external storage integration.",
-      tech: ["Kali", "Fail2ban", "UFW", "SSH", "Python"],
-    },
-    {
-      title: "AdGuard DNS Filter",
-      tag: "NETWORK",
-      tagColor: "#a29bfe",
-      desc: "Network-wide DNS filtering with AdGuard Home on Raspberry Pi. Blocks ads and trackers across every device on the home network.",
-      tech: ["AdGuard", "DNS", "Raspberry Pi", "DHCP"],
-    },
-    {
-      title: "Pixel 6 Pro Hardening",
-      tag: "MOBILE",
-      tagColor: "#74b9ff",
-      desc: "Rooted and hardened a Pixel 6 Pro with AFWall+ firewall, custom security policies, and network-level protections for maximum privacy.",
-      tech: ["Android", "AFWall+", "Root", "Magisk"],
-    },
-    {
-      title: "Custom Bobber Build",
-      tag: "HARDWARE",
-      tagColor: "#fd79a8",
-      desc: "Designing and fabricating a custom bobber motorcycle from a Suzuki Intruder — engine work, frame mods, and custom electrical wiring.",
-      tech: ["Fabrication", "Wiring", "Engine", "Design"],
-    },
+    { title: "NoteStream", tag: "FEATURED", tagColor: "var(--neon)", desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.", tech: ["React", "Supabase", "AI", "Edge Functions", "RLS"], featured: true },
+    { title: "Pi Security Dashboard", tag: "SECURITY", tagColor: "var(--orange)", desc: "Web monitoring dashboard for a Raspberry Pi 4 running Kali Linux. SSH key auth, fail2ban, UFW, portsentry, and external storage integration.", tech: ["Kali", "Fail2ban", "UFW", "SSH", "Python"] },
+    { title: "AdGuard DNS Filter", tag: "NETWORK", tagColor: "var(--purple)", desc: "Network-wide DNS filtering with AdGuard Home on Raspberry Pi. Blocks ads and trackers across every device on the home network.", tech: ["AdGuard", "DNS", "Raspberry Pi", "DHCP"] },
+    { title: "Pixel 6 Pro Hardening", tag: "MOBILE", tagColor: "var(--blue)", desc: "Rooted and hardened a Pixel 6 Pro with AFWall+ firewall, custom security policies, and network-level protections for maximum privacy.", tech: ["Android", "AFWall+", "Root", "Magisk"] },
+    { title: "Custom Bobber Build", tag: "HARDWARE", tagColor: "var(--pink)", desc: "Designing and fabricating a custom bobber motorcycle from a Suzuki Intruder — engine work, frame mods, and custom electrical wiring.", tech: ["Fabrication", "Wiring", "Engine", "Design"] },
+  ];
+
+  const education = [
+    { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry." },
+    { status: "Ongoing", title: "Cybersecurity — Self-Directed", desc: "Hands-on learning through building intrusion detection systems, configuring firewalls and fail2ban, hardening Linux servers, and creating security monitoring dashboards on Raspberry Pi." },
+    { status: "Ongoing", title: "Full-Stack Web Development", desc: "Learning React, JavaScript, database design with Supabase, API integration, and deployment through building real applications like NoteStream with auth, subscriptions, and AI features." },
+    { status: "Ongoing", title: "Linux & System Administration", desc: "Deep-diving into Kali Linux, Ubuntu server management, shell scripting, service configuration, and embedded systems through Raspberry Pi projects and home lab setups." },
+  ];
+
+  const contacts = [
+    { icon: "✉", label: "Email", value: "eric.dangel.dev@gmail.com", href: "mailto:eric.dangel.dev@gmail.com" },
+    { icon: "◈", label: "GitHub", value: "github.com/blackapple805", href: "https://github.com/blackapple805" },
+    { icon: "✆", label: "WhatsApp", value: "(805) 676-8875", href: "https://wa.me/18056768875" },
+    { icon: "◎", label: "Instagram", value: "@quest.on.a.dream", href: "https://instagram.com/quest.on.a.dream" },
+    { icon: "◉", label: "LinkedIn", value: "Connect with me", href: "https://linkedin.com" },
+    { icon: "⌘", label: "Location", value: "United States", href: null },
   ];
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap');
-
-        :root {
-          --bg: #0a0e17;
-          --bg2: #0f1520;
-          --bg3: #141c2b;
-          --surface: #1a2332;
-          --border: #243044;
-          --text: #e8edf5;
-          --text2: #8899aa;
-          --neon: #00ffc8;
-          --orange: #ff6b35;
-          --purple: #a29bfe;
-          --blue: #74b9ff;
-          --pink: #fd79a8;
-          --yellow: #ffd93d;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body {
-          font-family: 'Outfit', sans-serif;
-          background: var(--bg);
-          color: var(--text);
-          overflow-x: hidden;
-          -webkit-font-smoothing: antialiased;
-        }
-
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--neon); }
-
-        /* BLINK CURSOR */
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-        /* GLITCH */
-        .glitch {
-          position: relative;
-          display: inline-block;
-        }
-        .glitch::before, .glitch::after {
-          content: attr(data-text);
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-        }
-        .glitch::before {
-          animation: glitch1 3s infinite;
-          color: var(--neon);
-          z-index: -1;
-        }
-        .glitch::after {
-          animation: glitch2 3s infinite;
-          color: var(--orange);
-          z-index: -1;
-        }
-        @keyframes glitch1 {
-          0%,93%,100%{transform:translate(0)} 94%{transform:translate(-3px,-1px)} 95%{transform:translate(2px,1px)} 96%{transform:translate(-1px,2px)}
-        }
-        @keyframes glitch2 {
-          0%,93%,100%{transform:translate(0)} 94%{transform:translate(3px,1px)} 95%{transform:translate(-2px,-1px)} 96%{transform:translate(1px,-2px)}
-        }
-
-        /* GLOW PULSE */
-        @keyframes glowPulse {
-          0%,100% { box-shadow: 0 0 20px rgba(0,255,200,0.1), inset 0 0 20px rgba(0,255,200,0.05); }
-          50% { box-shadow: 0 0 40px rgba(0,255,200,0.2), inset 0 0 40px rgba(0,255,200,0.1); }
-        }
-
-        /* SCAN LINE */
-        @keyframes scanline {
-          0% { transform: translateY(-100%); }
-          100% { transform: translateY(100vh); }
-        }
-
-        /* FLOAT */
-        @keyframes float {
-          0%,100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-
-        /* GRADIENT SHIFT */
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        /* NAV */
-        .nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 1000;
-          padding: 0 2rem;
-          height: 70px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgba(10, 14, 23, 0.8);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid transparent;
-          transition: all 0.3s;
-        }
-        .nav.scrolled {
-          border-bottom-color: var(--border);
-          background: rgba(10, 14, 23, 0.95);
-        }
-        .nav-logo {
-          font-family: 'JetBrains Mono', monospace;
-          font-weight: 600;
-          font-size: 1.1rem;
-          color: var(--neon);
-          cursor: pointer;
-          letter-spacing: -0.02em;
-        }
-        .nav-logo span { color: var(--text2); }
-        .nav-links {
-          display: flex;
-          gap: 0.25rem;
-          align-items: center;
-        }
-        .nav-link {
-          background: none;
-          border: none;
-          color: var(--text2);
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.75rem;
-          padding: 0.5rem 1rem;
-          cursor: pointer;
-          border-radius: 6px;
-          transition: all 0.2s;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .nav-link:hover { color: var(--text); background: var(--surface); }
-        .nav-link.active { color: var(--neon); background: rgba(0,255,200,0.08); }
-        .nav-cta {
-          background: var(--neon);
-          color: var(--bg);
-          font-family: 'Outfit', sans-serif;
-          font-weight: 600;
-          font-size: 0.8rem;
-          padding: 0.55rem 1.25rem;
-          border-radius: 6px;
-          border: none;
-          cursor: pointer;
-          margin-left: 0.75rem;
-          transition: all 0.2s;
-        }
-        .nav-cta:hover { opacity: 0.85; transform: translateY(-1px); }
-
-        /* MOBILE NAV */
-        .mobile-toggle {
-          display: none;
-          background: none;
-          border: 1px solid var(--border);
-          border-radius: 6px;
-          padding: 0.5rem;
-          cursor: pointer;
-          color: var(--text);
-          font-size: 1.2rem;
-          width: 40px;
-          height: 40px;
-          align-items: center;
-          justify-content: center;
-        }
-        @media (max-width: 768px) {
-          .mobile-toggle { display: flex; }
-          .nav-links {
-            display: none;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            right: 0;
-            background: rgba(10, 14, 23, 0.98);
-            backdrop-filter: blur(20px);
-            flex-direction: column;
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-          }
-          .nav-links.open { display: flex; }
-          .nav-cta { margin-left: 0; margin-top: 0.5rem; }
-        }
-
-        /* MAGNETIC BTN */
-        .magnetic-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.6rem;
-          padding: 0.85rem 2rem;
-          border-radius: 8px;
-          font-family: 'Outfit', sans-serif;
-          font-size: 0.95rem;
-          font-weight: 600;
-          text-decoration: none;
-          cursor: pointer;
-          border: none;
-          transition: all 0.25s;
-        }
-        .btn-neon {
-          background: var(--neon);
-          color: var(--bg);
-          box-shadow: 0 0 30px rgba(0,255,200,0.2);
-        }
-        .btn-neon:hover { box-shadow: 0 0 50px rgba(0,255,200,0.35); }
-        .btn-ghost {
-          background: transparent;
-          color: var(--text);
-          border: 1.5px solid var(--border);
-        }
-        .btn-ghost:hover { border-color: var(--neon); color: var(--neon); }
-
-        /* SECTION */
-        .section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 7rem 2rem;
-          position: relative;
-          z-index: 1;
-        }
-        .section-label {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.7rem;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: var(--neon);
-          margin-bottom: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .section-label::before {
-          content: '';
-          width: 30px;
-          height: 1px;
-          background: var(--neon);
-        }
-        .section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(2rem, 4vw, 3rem);
-          font-weight: 900;
-          letter-spacing: -0.02em;
-          line-height: 1.2;
-          margin-bottom: 1rem;
-        }
-        .section-desc {
-          color: var(--text2);
-          font-size: 1.05rem;
-          max-width: 550px;
-          line-height: 1.7;
-          margin-bottom: 3rem;
-        }
-
-        /* HERO */
-        .hero {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          position: relative;
-          z-index: 1;
-          overflow: hidden;
-        }
-        .hero-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 2rem;
-          width: 100%;
-        }
-        .hero-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.75rem;
-          color: var(--neon);
-          background: rgba(0,255,200,0.08);
-          border: 1px solid rgba(0,255,200,0.2);
-          padding: 0.4rem 1rem;
-          border-radius: 20px;
-          margin-bottom: 2rem;
-          animation: glowPulse 3s ease infinite;
-        }
-        .hero-badge .dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--neon);
-          animation: blink 1.5s ease infinite;
-        }
-        .hero h1 {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(3rem, 7vw, 5.5rem);
-          font-weight: 900;
-          line-height: 1.05;
-          letter-spacing: -0.03em;
-          margin-bottom: 1.5rem;
-        }
-        .hero h1 .line2 {
-          color: transparent;
-          -webkit-text-stroke: 1.5px var(--text2);
-        }
-        .hero h1 .accent {
-          color: var(--neon);
-          -webkit-text-stroke: 0;
-          font-style: italic;
-        }
-        .hero-sub {
-          font-size: 1.15rem;
-          color: var(--text2);
-          max-width: 500px;
-          line-height: 1.8;
-          margin-bottom: 2.5rem;
-        }
-        .hero-actions {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        .hero-scroll {
-          position: absolute;
-          bottom: 3rem;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--text2);
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.65rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          animation: float 2.5s ease infinite;
-        }
-        .scroll-line {
-          width: 1px;
-          height: 40px;
-          background: linear-gradient(to bottom, var(--neon), transparent);
-        }
-
-        /* ABOUT GRID */
-        .about-grid {
-          display: grid;
-          grid-template-columns: 1.2fr 1fr;
-          gap: 4rem;
-          align-items: start;
-        }
-        .about-text p {
-          color: var(--text2);
-          line-height: 1.8;
-          margin-bottom: 1.25rem;
-          font-size: 1rem;
-        }
-        .about-text p strong { color: var(--text); font-weight: 600; }
-        .about-stats {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-        .stat-card {
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 1.75rem;
-          text-align: center;
-          transition: all 0.3s;
-          position: relative;
-          overflow: hidden;
-        }
-        .stat-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, var(--neon), transparent);
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-        .stat-card:hover { border-color: rgba(0,255,200,0.3); transform: translateY(-4px); }
-        .stat-card:hover::before { opacity: 1; }
-        .stat-number {
-          font-family: 'Playfair Display', serif;
-          font-size: 2.25rem;
-          font-weight: 900;
-          color: var(--neon);
-          line-height: 1;
-          margin-bottom: 0.5rem;
-        }
-        .stat-label {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.7rem;
-          color: var(--text2);
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-        }
-
-        /* SKILLS */
-        .skills-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.25rem;
-        }
-        .skill-card {
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2rem 1.75rem;
-          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          position: relative;
-          overflow: hidden;
-        }
-        .skill-card::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: 14px;
-          opacity: 0;
-          transition: opacity 0.35s;
-        }
-        .skill-card:hover {
-          transform: translateY(-6px);
-          border-color: transparent;
-        }
-        .skill-card:hover::after { opacity: 1; }
-        .skill-icon {
-          font-size: 1.5rem;
-          margin-bottom: 1.25rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          font-family: 'JetBrains Mono', monospace;
-          font-weight: 600;
-        }
-        .skill-card h3 {
-          font-size: 1.05rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
-          font-family: 'Outfit', sans-serif;
-        }
-        .skill-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.4rem;
-        }
-        .skill-tag {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.65rem;
-          padding: 0.3rem 0.6rem;
-          border-radius: 4px;
-          background: rgba(255,255,255,0.05);
-          color: var(--text2);
-          border: 1px solid var(--border);
-          transition: all 0.2s;
-        }
-        .skill-card:hover .skill-tag {
-          border-color: rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.08);
-        }
-
-        /* PROFICIENCY */
-        .proficiency {
-          margin-top: 4rem;
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2.5rem;
-        }
-        .proficiency h3 {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.8rem;
-          color: var(--neon);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          margin-bottom: 2rem;
-        }
-        .prof-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0 3rem;
-        }
-
-        /* PROJECTS */
-        .projects-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.25rem;
-        }
-        .project-card {
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2rem;
-          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          position: relative;
-          overflow: hidden;
-          cursor: default;
-        }
-        .project-card:hover {
-          transform: translateY(-6px);
-          border-color: rgba(255,255,255,0.15);
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .project-card.featured {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: 1.3fr 1fr;
-          gap: 2.5rem;
-          align-items: center;
-          padding: 2.5rem;
-        }
-        .project-tag {
-          display: inline-block;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.6rem;
-          font-weight: 600;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          padding: 0.3rem 0.7rem;
-          border-radius: 4px;
-          margin-bottom: 1rem;
-        }
-        .project-card h3 {
-          font-size: 1.3rem;
-          font-weight: 700;
-          margin-bottom: 0.75rem;
-        }
-        .project-card p {
-          font-size: 0.9rem;
-          color: var(--text2);
-          line-height: 1.7;
-        }
-        .project-tech {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.4rem;
-          margin-top: 1.25rem;
-        }
-        .project-preview {
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: 10px;
-          height: 220px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .project-preview-text {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.85rem;
-          color: var(--neon);
-        }
-        .project-preview::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: conic-gradient(from 0deg, transparent, rgba(0,255,200,0.05), transparent, rgba(255,107,53,0.05), transparent);
-          animation: gradientShift 8s linear infinite;
-        }
-
-        /* EDUCATION */
-        .edu-timeline {
-          position: relative;
-          padding-left: 3rem;
-        }
-        .edu-timeline::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 11px;
-          bottom: 0;
-          width: 1px;
-          background: linear-gradient(to bottom, var(--neon), var(--border), transparent);
-        }
-        .edu-item {
-          position: relative;
-          margin-bottom: 2.5rem;
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2rem;
-          transition: all 0.3s;
-        }
-        .edu-item:hover {
-          border-color: rgba(0,255,200,0.3);
-          transform: translateX(8px);
-        }
-        .edu-dot {
-          position: absolute;
-          left: -3rem;
-          top: 2rem;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: var(--bg);
-          border: 2px solid var(--neon);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1;
-          transform: translateX(0px);
-        }
-        .edu-dot-inner {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--neon);
-        }
-        .edu-meta {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.7rem;
-          color: var(--neon);
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          margin-bottom: 0.5rem;
-        }
-        .edu-item h3 {
-          font-size: 1.15rem;
-          font-weight: 700;
-          margin-bottom: 0.5rem;
-        }
-        .edu-item p {
-          font-size: 0.9rem;
-          color: var(--text2);
-          line-height: 1.7;
-        }
-
-        /* CONTACT */
-        .contact-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.25rem;
-        }
-        .contact-card {
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 2rem;
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-          text-decoration: none;
-          color: inherit;
-          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .contact-card:hover {
-          transform: translateY(-4px);
-          border-color: rgba(0,255,200,0.3);
-          box-shadow: 0 16px 48px rgba(0,0,0,0.25);
-        }
-        .contact-icon {
-          width: 52px;
-          height: 52px;
-          min-width: 52px;
-          border-radius: 14px;
-          background: rgba(0,255,200,0.08);
-          border: 1px solid rgba(0,255,200,0.15);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.2rem;
-          transition: all 0.3s;
-        }
-        .contact-card:hover .contact-icon {
-          background: rgba(0,255,200,0.15);
-          box-shadow: 0 0 20px rgba(0,255,200,0.15);
-        }
-        .contact-label {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.7rem;
-          color: var(--text2);
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          margin-bottom: 0.2rem;
-        }
-        .contact-value {
-          font-size: 1rem;
-          font-weight: 600;
-        }
-
-        /* FOOTER */
-        .footer {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 3rem 2rem;
-          border-top: 1px solid var(--border);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          position: relative;
-          z-index: 1;
-        }
-        .footer p {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.75rem;
-          color: var(--text2);
-        }
-        .footer a {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.75rem;
-          color: var(--text2);
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .footer a:hover { color: var(--neon); }
-
-        /* SCAN LINE OVERLAY */
-        .scanline-overlay {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          pointer-events: none;
-          z-index: 9999;
-          overflow: hidden;
-        }
-        .scanline-overlay::after {
-          content: '';
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%;
-          height: 4px;
-          background: linear-gradient(90deg, transparent, rgba(0,255,200,0.06), transparent);
-          animation: scanline 6s linear infinite;
-        }
-
-        /* NOISE OVERLAY */
-        .noise {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          pointer-events: none;
-          z-index: 9998;
-          opacity: 0.03;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-          background-size: 256px;
-        }
-
-        /* LOADING SCREEN */
-        .loader {
-          position: fixed;
-          inset: 0;
-          background: var(--bg);
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-direction: column;
-          gap: 1.5rem;
-          transition: opacity 0.6s, visibility 0.6s;
-        }
-        .loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
-        .loader-bar {
-          width: 120px;
-          height: 2px;
-          background: var(--border);
-          border-radius: 1px;
-          overflow: hidden;
-        }
-        .loader-fill {
-          height: 100%;
-          background: var(--neon);
-          border-radius: 1px;
-          animation: loadFill 1s ease forwards;
-          box-shadow: 0 0 10px var(--neon);
-        }
-        @keyframes loadFill { 0%{width:0} 100%{width:100%} }
-        .loader-text {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 0.75rem;
-          color: var(--text2);
-          letter-spacing: 0.1em;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
-          .skills-grid { grid-template-columns: 1fr 1fr; }
-          .prof-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 768px) {
-          .section { padding: 5rem 1.5rem; }
-          .hero-inner { padding: 0 1.5rem; }
-          .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-          .skills-grid { grid-template-columns: 1fr; }
-          .projects-grid { grid-template-columns: 1fr; }
-          .project-card.featured { grid-template-columns: 1fr; }
-          .contact-grid { grid-template-columns: 1fr; }
-          .footer { flex-direction: column; gap: 1rem; text-align: center; }
-          .hero-scroll { display: none; }
-        }
-      `}</style>
-
       {/* LOADING SCREEN */}
       <div className={`loader ${loaded ? "done" : ""}`}>
         <div className="loader-text">INITIALIZING</div>
@@ -1204,7 +368,7 @@ export default function App() {
       {/* OVERLAYS */}
       <div className="noise" />
       <div className="scanline-overlay" />
-      <ParticleField />
+      <ParticleField theme={theme} />
 
       {/* NAV */}
       <nav className={`nav ${scrollY > 50 ? "scrolled" : ""}`}>
@@ -1215,58 +379,39 @@ export default function App() {
           {mobileNav ? "✕" : "☰"}
         </button>
         <div className={`nav-links ${mobileNav ? "open" : ""}`}>
-          {SECTIONS.filter(s => s !== "home").map((s) => (
-            <button
-              key={s}
-              className={`nav-link ${activeSection === s ? "active" : ""}`}
-              onClick={() => scrollTo(s)}
-            >
+          {SECTIONS.filter((s) => s !== "home").map((s) => (
+            <button key={s} className={`nav-link ${activeSection === s ? "active" : ""}`} onClick={() => scrollTo(s)}>
               {s}
             </button>
           ))}
           <button className="nav-cta" onClick={() => scrollTo("contact")}>Let's Talk</button>
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
         </div>
       </nav>
 
       {/* HERO */}
       <section className="hero" id="home">
         <div className="hero-inner">
-          <div style={{
-            opacity: heroReady ? 1 : 0,
-            transform: heroReady ? "translateY(0)" : "translateY(30px)",
-            transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1)",
-          }}>
+          <div style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1)" }}>
             <div className="hero-badge">
               <span className="dot" />
               <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
             </div>
           </div>
 
-          <h1 style={{
-            opacity: heroReady ? 1 : 0,
-            transform: heroReady ? "translateY(0)" : "translateY(40px)",
-            transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s",
-          }}>
+          <h1 style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(40px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s" }}>
             <GlitchText>Circuits,</GlitchText><br />
             <span className="line2">Code &amp;</span>{" "}
             <span className="accent">Craft.</span>
           </h1>
 
-          <p className="hero-sub" style={{
-            opacity: heroReady ? 1 : 0,
-            transform: heroReady ? "translateY(0)" : "translateY(30px)",
-            transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s",
-          }}>
-            Aspiring electrician blending hands-on trade skills with
-            cybersecurity expertise, web development, and a love for
-            building things that work — from panels to pixels.
+          <p className="hero-sub" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s" }}>
+            Aspiring electrician blending hands-on trade skills with cybersecurity expertise, web development, and a love for building things that work — from panels to pixels.
           </p>
 
-          <div className="hero-actions" style={{
-            opacity: heroReady ? 1 : 0,
-            transform: heroReady ? "translateY(0)" : "translateY(30px)",
-            transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s",
-          }}>
+          <div className="hero-actions" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s" }}>
             <MagneticButton href="#projects" className="btn-neon">
               <span>View My Work</span>
               <span>→</span>
@@ -1276,7 +421,6 @@ export default function App() {
             </MagneticButton>
           </div>
         </div>
-
         <div className="hero-scroll">
           <span>Scroll</span>
           <div className="scroll-line" />
@@ -1292,15 +436,9 @@ export default function App() {
         <div className="about-grid">
           <Reveal delay={100}>
             <div className="about-text">
-              <p>
-                I'm <strong>Eric</strong> — a hands-on builder with a drive to understand how things work at every level. I'm currently preparing for an <strong>electrical apprenticeship</strong>, studying NEC code, circuit theory, and conduit bending through technical references and real-world practice.
-              </p>
-              <p>
-                But my curiosity doesn't stop at the breaker panel. I'm deep into <strong>cybersecurity</strong> — hardening Linux servers, configuring firewalls, and building monitoring dashboards. I also build <strong>web applications</strong> from scratch with React, Supabase, and modern tooling.
-              </p>
-              <p>
-                Outside of work, I'm building a <strong>custom bobber motorcycle</strong> from a Suzuki Intruder and playing guitar. I believe the best way to learn anything is to get your hands dirty and figure it out.
-              </p>
+              <p>I'm <strong>Eric</strong> — a hands-on builder with a drive to understand how things work at every level. I'm currently preparing for an <strong>electrical apprenticeship</strong>, studying NEC code, circuit theory, and conduit bending through technical references and real-world practice.</p>
+              <p>But my curiosity doesn't stop at the breaker panel. I'm deep into <strong>cybersecurity</strong> — hardening Linux servers, configuring firewalls, and building monitoring dashboards. I also build <strong>web applications</strong> from scratch with React, Supabase, and modern tooling.</p>
+              <p>Outside of work, I'm building a <strong>custom bobber motorcycle</strong> from a Suzuki Intruder and playing guitar. I believe the best way to learn anything is to get your hands dirty and figure it out.</p>
             </div>
           </Reveal>
           <Reveal delay={300}>
@@ -1310,7 +448,7 @@ export default function App() {
                 <div className="stat-label">Projects Built</div>
               </div>
               <div className="stat-card">
-                <div className="stat-number"><Counter target={6} suffix="" /></div>
+                <div className="stat-number"><Counter target={6} /></div>
                 <div className="stat-label">Skill Domains</div>
               </div>
               <div className="stat-card">
@@ -1331,28 +469,22 @@ export default function App() {
         <Reveal>
           <p className="section-label">02 — Skills</p>
           <h2 className="section-title">My Toolkit</h2>
-          <p className="section-desc">
-            A cross-disciplinary toolkit forged through real projects — from pulling wire to writing code to locking down networks.
-          </p>
+          <p className="section-desc">A cross-disciplinary toolkit forged through real projects — from pulling wire to writing code to locking down networks.</p>
         </Reveal>
         <div className="skills-grid">
           {skillCategories.map((cat, i) => (
             <Reveal key={cat.title} delay={i * 80}>
               <div
                 className="skill-card"
-                style={{
-                  "--hover-color": cat.color,
-                }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = cat.color + "44";
-                  e.currentTarget.style.boxShadow = `0 20px 60px ${cat.color}15`;
+                  const c = getComputedStyle(e.currentTarget).getPropertyValue("--hover-color") || cat.color;
+                  e.currentTarget.style.borderColor = `rgba(var(--neon-rgb), 0.3)`;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = "";
                 }}
               >
-                <div className="skill-icon" style={{ background: cat.color + "15", color: cat.color }}>
+                <div className="skill-icon" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: cat.color }}>
                   {cat.icon}
                 </div>
                 <h3>{cat.title}</h3>
@@ -1370,12 +502,12 @@ export default function App() {
           <div className="proficiency">
             <h3>// Proficiency Levels</h3>
             <div className="prof-grid">
-              <SkillBar label="Electrical Theory" level={70} color="#ffd93d" delay={0} />
-              <SkillBar label="React / JavaScript" level={65} color="#ff6b35" delay={100} />
-              <SkillBar label="Linux Administration" level={75} color="#a29bfe" delay={200} />
-              <SkillBar label="Network Security" level={72} color="#00ffc8" delay={300} />
-              <SkillBar label="HTML / CSS" level={80} color="#74b9ff" delay={400} />
-              <SkillBar label="Hardware / Builds" level={78} color="#fd79a8" delay={500} />
+              <SkillBar label="Electrical Theory" level={70} color="var(--yellow)" delay={0} />
+              <SkillBar label="React / JavaScript" level={65} color="var(--orange)" delay={100} />
+              <SkillBar label="Linux Administration" level={75} color="var(--purple)" delay={200} />
+              <SkillBar label="Network Security" level={72} color="var(--neon)" delay={300} />
+              <SkillBar label="HTML / CSS" level={80} color="var(--blue)" delay={400} />
+              <SkillBar label="Hardware / Builds" level={78} color="var(--pink)" delay={500} />
             </div>
           </div>
         </Reveal>
@@ -1386,19 +518,14 @@ export default function App() {
         <Reveal>
           <p className="section-label">03 — Projects</p>
           <h2 className="section-title">Things I've Built</h2>
-          <p className="section-desc">
-            Real projects that solve real problems — from full-stack apps to hardened servers to hand-built motorcycles.
-          </p>
+          <p className="section-desc">Real projects that solve real problems — from full-stack apps to hardened servers to hand-built motorcycles.</p>
         </Reveal>
         <div className="projects-grid">
           {projects.map((proj, i) => (
             <Reveal key={proj.title} delay={i * 80}>
               <div className={`project-card ${proj.featured ? "featured" : ""}`}>
                 <div>
-                  <span
-                    className="project-tag"
-                    style={{ background: proj.tagColor + "18", color: proj.tagColor }}
-                  >
+                  <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>
                     {proj.tag}
                   </span>
                   <h3>{proj.title}</h3>
@@ -1425,38 +552,13 @@ export default function App() {
         <Reveal>
           <p className="section-label">04 — Education</p>
           <h2 className="section-title">Never Stop Learning</h2>
-          <p className="section-desc">
-            A mix of structured study and relentless self-teaching across electrical, security, and development.
-          </p>
+          <p className="section-desc">A mix of structured study and relentless self-teaching across electrical, security, and development.</p>
         </Reveal>
         <div className="edu-timeline">
-          {[
-            {
-              status: "In Progress",
-              title: "Electrical Apprenticeship Prep",
-              desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry.",
-            },
-            {
-              status: "Ongoing",
-              title: "Cybersecurity — Self-Directed",
-              desc: "Hands-on learning through building intrusion detection systems, configuring firewalls and fail2ban, hardening Linux servers, and creating security monitoring dashboards on Raspberry Pi.",
-            },
-            {
-              status: "Ongoing",
-              title: "Full-Stack Web Development",
-              desc: "Learning React, JavaScript, database design with Supabase, API integration, and deployment through building real applications like NoteStream with auth, subscriptions, and AI features.",
-            },
-            {
-              status: "Ongoing",
-              title: "Linux & System Administration",
-              desc: "Deep-diving into Kali Linux, Ubuntu server management, shell scripting, service configuration, and embedded systems through Raspberry Pi projects and home lab setups.",
-            },
-          ].map((edu, i) => (
+          {education.map((edu, i) => (
             <Reveal key={edu.title} delay={i * 120}>
               <div className="edu-item">
-                <div className="edu-dot">
-                  <div className="edu-dot-inner" />
-                </div>
+                <div className="edu-dot"><div className="edu-dot-inner" /></div>
                 <div className="edu-meta">{edu.status}</div>
                 <h3>{edu.title}</h3>
                 <p>{edu.desc}</p>
@@ -1471,17 +573,10 @@ export default function App() {
         <Reveal>
           <p className="section-label">05 — Contact</p>
           <h2 className="section-title">Let's Connect</h2>
-          <p className="section-desc">
-            Open to apprenticeship opportunities, freelance work, or just talking tech. Reach out anytime.
-          </p>
+          <p className="section-desc">Open to apprenticeship opportunities, freelance work, or just talking tech. Reach out anytime.</p>
         </Reveal>
         <div className="contact-grid">
-          {[
-            { icon: "✉", label: "Email", value: "your.email@example.com", href: "mailto:your.email@example.com" },
-            { icon: "◈", label: "GitHub", value: "github.com/yourusername", href: "https://github.com" },
-            { icon: "◉", label: "LinkedIn", value: "Connect with me", href: "https://linkedin.com" },
-            { icon: "⌘", label: "Location", value: "United States", href: null },
-          ].map((c, i) => (
+          {contacts.map((c, i) => (
             <Reveal key={c.label} delay={i * 80}>
               <a href={c.href || "#"} className="contact-card" target={c.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer">
                 <div className="contact-icon">{c.icon}</div>
