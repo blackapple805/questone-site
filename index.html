@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
   <head>
@@ -5,6 +6,30 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>questone-site</title>
+
+    <!-- ✅ Theme boot (prevents white flash) -->
+    <script>
+      (function () {
+        try {
+          // expects localStorage key "theme" => "dark" | "light"
+          var saved = localStorage.getItem("theme");
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+          var theme = saved || (prefersDark ? "dark" : "light");
+          var root = document.documentElement;
+
+          root.setAttribute("data-theme", theme);
+
+          // Hard paint guard while CSS loads
+          root.style.backgroundColor = theme === "dark" ? "#0a0a0a" : "#f5f4f0";
+
+          // Enable transitions after correct theme is set
+          root.setAttribute("data-theme-ready", "1");
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Fonts: Sora (display) + Crimson Pro (body) + IBM Plex Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,3 +44,4 @@
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+```

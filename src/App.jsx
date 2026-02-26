@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
+
 // ═══════════════════════════════════════════════════════
-//  ERIC — Creative Resume Site
-//  Theme: Dark / Light toggle
-//  Fonts: Sora (display) + Crimson Pro (body) + IBM Plex Mono
-//  Enhanced: 3D Sword, Aurora Background, SVG Icons
+//  ERIC — Creative Resume Site v3
+//  Aesthetic: Cyberpunk Dragon / Acid Yellow-Black
+//  Hero: Mech Dragon image with parallax + glow
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
@@ -23,16 +23,14 @@ const Icons = {
   ),
   Code: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
+      <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
       <line x1="14" y1="4" x2="10" y2="20" strokeOpacity="0.5" />
     </svg>
   ),
   Terminal: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="18" rx="3" fill={color} fillOpacity="0.08" />
-      <polyline points="7 10 10 13 7 16" />
-      <line x1="13" y1="16" x2="17" y2="16" />
+      <polyline points="7 10 10 13 7 16" /><line x1="13" y1="16" x2="17" y2="16" />
     </svg>
   ),
   Network: ({ size = 24, color = "currentColor" }) => (
@@ -40,8 +38,7 @@ const Icons = {
       <circle cx="12" cy="5" r="2.5" fill={color} fillOpacity="0.15" />
       <circle cx="5" cy="19" r="2.5" fill={color} fillOpacity="0.15" />
       <circle cx="19" cy="19" r="2.5" fill={color} fillOpacity="0.15" />
-      <line x1="12" y1="7.5" x2="5" y2="16.5" />
-      <line x1="12" y1="7.5" x2="19" y2="16.5" />
+      <line x1="12" y1="7.5" x2="5" y2="16.5" /><line x1="12" y1="7.5" x2="19" y2="16.5" />
     </svg>
   ),
   Gear: ({ size = 24, color = "currentColor" }) => (
@@ -52,8 +49,7 @@ const Icons = {
   ),
   Mail: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="3" fill={color} fillOpacity="0.08" />
-      <polyline points="22 7 12 13 2 7" />
+      <rect x="2" y="4" width="20" height="16" rx="3" fill={color} fillOpacity="0.08" /><polyline points="22 7 12 13 2 7" />
     </svg>
   ),
   GitHub: ({ size = 24, color = "currentColor" }) => (
@@ -68,8 +64,7 @@ const Icons = {
   ),
   Instagram: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" />
-      <circle cx="12" cy="12" r="5" />
+      <rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="5" />
       <circle cx="17.5" cy="6.5" r="1.5" fill={color} />
     </svg>
   ),
@@ -80,8 +75,7 @@ const Icons = {
   ),
   MapPin: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill={color} fillOpacity="0.1" />
-      <circle cx="12" cy="10" r="3" />
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill={color} fillOpacity="0.1" /><circle cx="12" cy="10" r="3" />
     </svg>
   ),
   Sun: ({ size = 22, color = "currentColor" }) => (
@@ -100,735 +94,161 @@ const Icons = {
   ),
 };
 
-// ── Aurora Background ──
-function AuroraBackground({ theme }) {
-  const canvasRef = useRef(null);
-  const animRef = useRef(null);
-  const timeRef = useRef(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    let w = (canvas.width = window.innerWidth);
-    let h = (canvas.height = window.innerHeight);
-    const isDark = theme === "dark";
-
-    const blobs = Array.from({ length: 5 }, (_, i) => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      radius: Math.random() * 300 + 200,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.2,
-      hue: isDark ? [160, 180, 270, 320, 30][i] : [150, 170, 260, 340, 40][i],
-      saturation: isDark ? 80 : 50,
-      lightness: isDark ? 50 : 60,
-      alpha: isDark ? 0.06 : 0.04,
-      phase: Math.random() * Math.PI * 2,
-    }));
-
-    const draw = () => {
-      timeRef.current += 0.003;
-      ctx.clearRect(0, 0, w, h);
-
-      for (const blob of blobs) {
-        blob.x += blob.vx + Math.sin(timeRef.current + blob.phase) * 0.5;
-        blob.y += blob.vy + Math.cos(timeRef.current * 0.7 + blob.phase) * 0.3;
-
-        if (blob.x < -blob.radius) blob.x = w + blob.radius;
-        if (blob.x > w + blob.radius) blob.x = -blob.radius;
-        if (blob.y < -blob.radius) blob.y = h + blob.radius;
-        if (blob.y > h + blob.radius) blob.y = -blob.radius;
-
-        const pulsingRadius = blob.radius + Math.sin(timeRef.current * 2 + blob.phase) * 40;
-
-        const gradient = ctx.createRadialGradient(
-          blob.x, blob.y, 0,
-          blob.x, blob.y, pulsingRadius
-        );
-        gradient.addColorStop(0, `hsla(${blob.hue}, ${blob.saturation}%, ${blob.lightness}%, ${blob.alpha * 1.5})`);
-        gradient.addColorStop(0.5, `hsla(${blob.hue}, ${blob.saturation}%, ${blob.lightness}%, ${blob.alpha * 0.5})`);
-        gradient.addColorStop(1, `hsla(${blob.hue}, ${blob.saturation}%, ${blob.lightness}%, 0)`);
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, w, h);
-      }
-
-      animRef.current = requestAnimationFrame(draw);
-    };
-
-    const handleResize = () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener("resize", handleResize);
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [theme]);
-
+// ── Dragon Hero Image with parallax mouse tracking ──
+function DragonHero({ theme }) {
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "fixed",
-        top: 0, left: 0,
-        width: "100%", height: "100%",
-        zIndex: 0,
-        pointerEvents: "none",
-      }}
-    />
-  );
-}
+    <div className="dragon-container" aria-label="Cyberpunk Mech Dragon">
+      <div className="dragon-glow" />
 
-// ── Node Network Mesh (connecting/disconnecting nodes) ──
-function ParticleMesh({ theme }) {
-  const canvasRef = useRef(null);
-  const particles = useRef([]);
-  const mouse = useRef({ x: -1000, y: -1000 });
-  const animRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    let w = (canvas.width = window.innerWidth);
-    let h = (canvas.height = window.innerHeight);
-    const isDark = theme === "dark";
-    const COUNT = 80;
-    const CONNECTION_DIST = 150;
-    const MOUSE_RADIUS = 200;
-
-    const neonR = isDark ? 0 : 13;
-    const neonG = isDark ? 255 : 138;
-    const neonB = isDark ? 200 : 106;
-
-    particles.current = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      baseR: Math.random() * 2 + 1,
-      r: Math.random() * 2 + 1,
-      pulse: Math.random() * Math.PI * 2, // phase offset for pulsing
-      connections: 0, // track active connections
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      const pts = particles.current;
-      const time = performance.now() * 0.001;
-
-      // Update positions
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Wrap around edges instead of bounce for smoother flow
-        if (p.x < -20) p.x = w + 20;
-        if (p.x > w + 20) p.x = -20;
-        if (p.y < -20) p.y = h + 20;
-        if (p.y > h + 20) p.y = -20;
-
-        // Mouse repulsion
-        const dx = p.x - mouse.current.x;
-        const dy = p.y - mouse.current.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_RADIUS) {
-          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
-          p.x += dx * force * 0.03;
-          p.y += dy * force * 0.03;
-        }
-
-        // Pulse node size based on connections
-        p.r = p.baseR + Math.sin(time * 1.5 + p.pulse) * 0.4;
-        p.connections = 0;
-      }
-
-      // Draw connections first (behind nodes)
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const p1 = pts[i];
-          const p2 = pts[j];
-          const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-
-          if (d < CONNECTION_DIST) {
-            p1.connections++;
-            p2.connections++;
-
-            // Fade based on distance — smooth connect/disconnect
-            const strength = 1 - (d / CONNECTION_DIST);
-            const alpha = strength * strength * (isDark ? 0.15 : 0.1);
-
-            // Draw connection line
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(${neonR},${neonG},${neonB},${alpha})`;
-            ctx.lineWidth = strength * 1.2;
-            ctx.stroke();
-
-            // Draw a bright dot at midpoint for very close connections
-            if (d < CONNECTION_DIST * 0.3) {
-              const mx = (p1.x + p2.x) / 2;
-              const my = (p1.y + p2.y) / 2;
-              const dotAlpha = (1 - d / (CONNECTION_DIST * 0.3)) * 0.3;
-              ctx.beginPath();
-              ctx.arc(mx, my, 1, 0, Math.PI * 2);
-              ctx.fillStyle = `rgba(${neonR},${neonG},${neonB},${dotAlpha})`;
-              ctx.fill();
-            }
-          }
-        }
-      }
-
-      // Draw nodes on top
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        // Nodes glow brighter when they have more connections
-        const connectGlow = Math.min(p.connections / 4, 1);
-        const baseAlpha = isDark ? 0.25 : 0.12;
-        const alpha = baseAlpha + connectGlow * (isDark ? 0.35 : 0.2);
-
-        // Outer glow for connected nodes
-        if (p.connections > 1) {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r + 2, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${neonR},${neonG},${neonB},${connectGlow * 0.08})`;
-          ctx.fill();
-        }
-
-        // Core node
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${neonR},${neonG},${neonB},${alpha})`;
-        ctx.fill();
-      }
-
-      animRef.current = requestAnimationFrame(draw);
-    };
-
-    const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    const handleMouse = (e) => { mouse.current = { x: e.clientX, y: e.clientY }; };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("mousemove", handleMouse);
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousemove", handleMouse);
-    };
-  }, [theme]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none" }}
-    />
-  );
-}
-
-// ── Floating Sword — Scroll-Driven with Mobile Fix + Theme Colors ──
-function FloatingSword({ theme }) {
-  const isDark = theme === "dark";
-  const swordRef = useRef(null);
-  const scrollData = useRef({ y: 0, docHeight: 1 });
-  const smooth = useRef({ x: 92, yOffset: 0, spin: 0, rotation: 0, topPercent: 50 });
-  const runningRef = useRef(true);
-  const loopStarted = useRef(false);
-
-  // Detect where Education and Contact sections are on the page
-  const sectionPositions = useRef({ eduEnd: 0.85, contactStart: 0.9 });
-
-  useEffect(() => {
-    const updateSectionPositions = () => {
-      const docH = document.documentElement.scrollHeight - window.innerHeight || 1;
-      const eduEl = document.getElementById("education");
-      const contactEl = document.getElementById("contact");
-      if (eduEl && contactEl) {
-        const eduBottom = eduEl.offsetTop + eduEl.offsetHeight;
-        const contactTop = contactEl.offsetTop;
-        sectionPositions.current.eduEnd = eduBottom / (docH + window.innerHeight);
-        sectionPositions.current.contactStart = contactTop / (docH + window.innerHeight);
-      }
-    };
-    // Run after layout settles
-    setTimeout(updateSectionPositions, 1000);
-    window.addEventListener("resize", updateSectionPositions);
-    return () => window.removeEventListener("resize", updateSectionPositions);
-  }, []);
-
-  // Update scroll data without triggering re-render
-  useEffect(() => {
-    const onScroll = () => {
-      scrollData.current.y = window.scrollY;
-      scrollData.current.docHeight = document.documentElement.scrollHeight - window.innerHeight || 1;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, []);
-
-  // Single animation loop — runs once, never restarts
-  useEffect(() => {
-    const el = swordRef.current;
-    if (!el || loopStarted.current) return;
-    loopStarted.current = true;
-    runningRef.current = true;
-
-    let frameCount = 0;
-
-    const tick = () => {
-      if (!runningRef.current) return;
-      frameCount++;
-
-      const { y, docHeight } = scrollData.current;
-      const progress = Math.min(y / docHeight, 1);
-      const isMobile = window.innerWidth <= 768;
-
-      const eased = 1 - Math.pow(1 - progress, 2);
-      const spinEased = 1 - Math.pow(1 - progress, 3);
-
-      // Calculate landing zone — between education end and contact start
-      const { eduEnd, contactStart } = sectionPositions.current;
-      const landingMidpoint = (eduEnd + contactStart) / 2;
-
-      // Determine how close we are to the landing zone
-      const landingProximity = Math.max(0, Math.min(1,
-        (progress - (landingMidpoint - 0.15)) / 0.15
-      ));
-
-      // Ease landing proximity for smooth transition
-      const landingEase = landingProximity * landingProximity * (3 - 2 * landingProximity); // smoothstep
-
-      let targetX, targetY, targetSpin, targetRotation;
-
-      if (isMobile) {
-        // MOBILE: Sword moves across screen like desktop, then lands horizontally
-        const baseX = 85 - eased * 70; // 85 → 15
-        const wave = Math.sin(progress * Math.PI * 4) * 12;
-        targetX = baseX + wave * (1 - landingEase);
-
-        // When landing, center horizontally
-        targetX = targetX * (1 - landingEase) + 50 * landingEase;
-        targetY = Math.sin(progress * Math.PI * 3) * 10 * (1 - landingEase);
-        targetSpin = spinEased * 720 * (1 - landingEase);
-        targetRotation = landingEase * 90;
-      } else {
-        // DESKTOP: Start far right, sweep left across the page
-        targetX = 92 - eased * 80; // 92vw → 12vw
-        const wave = Math.sin(progress * Math.PI * 3) * 15;
-        targetY = wave * (1 - landingEase);
-
-        // When near landing zone, move to center and go horizontal
-        targetX = targetX * (1 - landingEase) + 50 * landingEase;
-        targetSpin = spinEased * 720 * (1 - landingEase);
-        targetRotation = landingEase * 90;
-      }
-
-      // As sword approaches landing, shift it up so it sits above the contact cards
-      const targetTopPercent = 50 - landingEase * 32; // 50% → 18%
-
-      // FADE OUT: Once past the landing zone, fade sword to avoid overlapping contact cards
-      // Mobile needs to fade earlier since cards take up more vertical space
-      const fadeStart = isMobile ? 0.4 : 0.7;
-      const fadeOut = Math.max(0, 1 - Math.max(0, (landingProximity - fadeStart) / (1 - fadeStart)));
-
-      // Use faster lerp for first 60 frames so sword snaps to correct position on load
-      const lerpSpeed = frameCount < 60 ? 0.4 : 0.1;
-      smooth.current.x += (targetX - smooth.current.x) * lerpSpeed;
-      smooth.current.yOffset += (targetY - smooth.current.yOffset) * lerpSpeed;
-      smooth.current.spin += (targetSpin - smooth.current.spin) * lerpSpeed;
-      smooth.current.rotation += (targetRotation - smooth.current.rotation) * lerpSpeed;
-      smooth.current.topPercent += (targetTopPercent - smooth.current.topPercent) * lerpSpeed;
-
-      const time = performance.now() * 0.001;
-      // Dampen idle bob when landing
-      const idleBob = Math.sin(time * 0.6) * 3 * (1 - landingEase * 0.7);
-
-      // Clamp: never let the sword go below 30% of viewport (stays in upper half)
-      const clampedTop = Math.min(smooth.current.topPercent, 30);
-
-      el.style.top = `${clampedTop}%`;
-      el.style.left = `${smooth.current.x}vw`;
-      el.style.opacity = `${(isMobile ? 0.5 : 0.8) * fadeOut}`;
-      el.style.transform = `translateX(-50%) translateY(${smooth.current.yOffset + idleBob}px) rotate(${smooth.current.spin + smooth.current.rotation}deg)`;
-
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-
-    return () => { runningRef.current = false; };
-  }, []);
-
-  // ── Theme-aware Fireblade colors ──
-  // Dark mode: Heated energy blade (cyan/green glow) with gold guard
-  // Light mode: Molten fire blade (orange/yellow glow) with steel guard
-  const bladeBase = isDark ? "#2a3a4a" : "#4a4a52";
-  const bladeEdge = isDark ? "#1a2a38" : "#3a3a42";
-  const bladeGlow = isDark ? "#00ffc8" : "#ff8c00";
-  const bladeGlowMid = isDark ? "#00cc9e" : "#ffaa22";
-  const bladeGlowEnd = isDark ? "#005544" : "#cc4400";
-  const guardYellow = isDark ? "#d4a020" : "#c89018";
-  const guardYellowLight = isDark ? "#f0c040" : "#e0a830";
-  const guardDark = isDark ? "#8a6a10" : "#7a5a08";
-  const reactorColor = isDark ? "#7090a0" : "#606870";
-  const reactorGlow = isDark ? "rgba(0,255,200,0.6)" : "rgba(255,140,0,0.6)";
-  const handleColor = isDark ? "#3a3a3a" : "#2a2a2e";
-  const handleLight = isDark ? "#5a5a5a" : "#4a4a50";
-  const crossbarColor = isDark ? "#606060" : "#505058";
-  const glowColor1 = isDark ? "rgba(0,255,200,0.5)" : "rgba(255,140,0,0.5)";
-  const glowColor2 = isDark ? "rgba(0,255,200,0.25)" : "rgba(255,140,0,0.25)";
-  const glowColor3 = isDark ? "rgba(0,255,200,0.1)" : "rgba(255,100,0,0.1)";
-  const ventGlow = isDark ? "#00ffc8" : "#ff6600";
-  const edgeHighlight = isDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.2)";
-
-  return (
-    <div className="floating-sword" ref={swordRef}>
-      <svg
-        width="90"
-        height="340"
-        viewBox="0 0 90 340"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{
-          filter: `drop-shadow(0 0 8px ${glowColor1}) drop-shadow(0 0 25px ${glowColor2}) drop-shadow(0 0 50px ${glowColor3})`,
-        }}
-      >
-        <defs>
-          {/* Blade body gradient — steel to dark */}
-          <linearGradient id="fbBlade" x1="45" y1="0" x2="45" y2="195" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={bladeBase} />
-            <stop offset="40%" stopColor={bladeBase} stopOpacity="0.95" />
-            <stop offset="100%" stopColor={bladeEdge} />
-          </linearGradient>
-          {/* Blade inner glow — the heated energy line */}
-          <linearGradient id="fbGlow" x1="45" y1="0" x2="45" y2="195" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={bladeGlow} stopOpacity="0.9" />
-            <stop offset="50%" stopColor={bladeGlowMid} stopOpacity="0.7" />
-            <stop offset="100%" stopColor={bladeGlowEnd} stopOpacity="0.4" />
-          </linearGradient>
-          {/* Guard gradient */}
-          <linearGradient id="fbGuard" x1="0" y1="195" x2="90" y2="195" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={guardDark} />
-            <stop offset="30%" stopColor={guardYellow} />
-            <stop offset="70%" stopColor={guardYellowLight} />
-            <stop offset="100%" stopColor={guardDark} />
-          </linearGradient>
-          {/* Glow filter for the energy line */}
-          <filter id="energyGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="glow" />
-            <feComposite in="SourceGraphic" in2="glow" operator="over" />
-          </filter>
-          {/* Stronger glow for reactor */}
-          <filter id="reactorGlowF" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
-          </filter>
-          {/* Blade edge shimmer */}
-          <filter id="bladeShimmer">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
-
-        {/* ══ BLADE — Angular cleaver shape ══ */}
-        {/* Main blade body */}
-        <polygon
-          points="45,2 22,8 18,30 16,180 22,192 45,198 52,192 54,180 52,30 48,8"
-          fill="url(#fbBlade)"
-          filter="url(#bladeShimmer)"
+      {/* stack both images and only fade opacity */}
+      <div className="dragon-stack">
+        <img
+          src="/dragon.png"
+          alt=""
+          aria-hidden="true"
+          className={`dragon-img dragon-layer ${theme === "dark" ? "is-on" : ""}`}
+          draggable="false"
+          loading="eager"
+          decoding="async"
         />
-        {/* Blade spine (top edge highlight) */}
-        <line x1="48" y1="8" x2="52" y2="180" stroke={edgeHighlight} strokeWidth="1" />
-        {/* Blade cutting edge (bottom) */}
-        <line x1="22" y1="8" x2="16" y2="180" stroke={edgeHighlight} strokeWidth="0.5" opacity="0.5" />
-
-        {/* ══ ENERGY LINE — The heated glow running through the blade ══ */}
-        {/* Outer glow (wide, diffuse) */}
-        <polygon
-          points="45,15 32,20 30,180 38,193 45,196 48,193 50,180 48,20"
-          fill="url(#fbGlow)"
-          opacity="0.25"
-          filter="url(#energyGlow)"
+        <img
+          src="/lightdragon.png"
+          alt=""
+          aria-hidden="true"
+          className={`dragon-img dragon-layer ${theme === "light" ? "is-on" : ""}`}
+          draggable="false"
+          loading="eager"
+          decoding="async"
         />
-        {/* Core energy line (bright, narrow) */}
-        <polygon
-          points="44,18 36,22 34,178 40,191 44,194 46,191 48,178 46,22"
-          fill="url(#fbGlow)"
-          opacity="0.6"
-        />
-        {/* Hot center strip */}
-        <line x1="43" y1="25" x2="42" y2="185" stroke={bladeGlow} strokeWidth="2" opacity="0.8" filter="url(#energyGlow)" />
-        {/* Energy flicker lines */}
-        <line x1="38" y1="40" x2="37" y2="80" stroke={bladeGlow} strokeWidth="0.5" opacity="0.4" />
-        <line x1="48" y1="60" x2="47" y2="100" stroke={bladeGlow} strokeWidth="0.5" opacity="0.3" />
-        <line x1="36" y1="110" x2="35" y2="150" stroke={bladeGlow} strokeWidth="0.5" opacity="0.35" />
-
-        {/* ══ COOLING VENTS — Small slots near the guard ══ */}
-        {[0, 1, 2, 3, 4].map((i) => (
-          <g key={`vent-${i}`}>
-            <rect x="30" y={158 + i * 6} width="12" height="2" rx="0.5" fill={handleColor} opacity="0.7" />
-            <rect x="31" y={158.5 + i * 6} width="10" height="1" rx="0.5" fill={ventGlow} opacity="0.3" />
-          </g>
-        ))}
-
-        {/* ══ GUARD / TACTICAL HOUSING ══ */}
-        {/* Main guard block */}
-        <rect x="8" y="196" width="74" height="18" rx="3" fill="url(#fbGuard)" />
-        {/* Guard top detail line */}
-        <rect x="10" y="196" width="70" height="2" rx="1" fill={guardYellowLight} opacity="0.5" />
-        {/* Guard rail grooves */}
-        <rect x="14" y="201" width="3" height="8" rx="1" fill={guardDark} opacity="0.6" />
-        <rect x="20" y="201" width="3" height="8" rx="1" fill={guardDark} opacity="0.6" />
-        <rect x="26" y="201" width="3" height="8" rx="1" fill={guardDark} opacity="0.6" />
-        {/* "EX-01" text on guard */}
-        <text x="38" y="209" textAnchor="middle" fill={guardDark} fontSize="5" fontFamily="monospace" fontWeight="bold" opacity="0.7">EX-01</text>
-
-        {/* ══ REACTOR RING — Mini reactor built into guard ══ */}
-        {/* Reactor housing */}
-        <circle cx="68" cy="205" r="9" fill={reactorColor} stroke={handleLight} strokeWidth="1" />
-        <circle cx="68" cy="205" r="7" fill={handleColor} />
-        {/* Reactor glow */}
-        <circle cx="68" cy="205" r="5" fill={bladeGlow} opacity="0.15" filter="url(#reactorGlowF)" />
-        <circle cx="68" cy="205" r="3.5" fill={bladeGlow} opacity="0.4" />
-        <circle cx="68" cy="205" r="2" fill="white" opacity="0.5" />
-        {/* Reactor ring detail */}
-        <circle cx="68" cy="205" r="7" fill="none" stroke={bladeGlow} strokeWidth="0.5" opacity="0.6" />
-
-        {/* ══ HANDLE — Crossbar style ══ */}
-        {/* Main grip */}
-        <rect x="34" y="214" width="14" height="55" rx="3" fill={handleColor} />
-        {/* Grip texture lines */}
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-          <line
-            key={`grip-${i}`}
-            x1="35"
-            y1={218 + i * 5}
-            x2="47"
-            y2={219.5 + i * 5}
-            stroke={handleLight}
-            strokeWidth="1"
-            opacity="0.4"
-          />
-        ))}
-        {/* Grip side rails */}
-        <rect x="33" y="218" width="1.5" height="46" rx="0.5" fill={handleLight} opacity="0.3" />
-        <rect x="47.5" y="218" width="1.5" height="46" rx="0.5" fill={handleLight} opacity="0.3" />
-
-        {/* ══ CROSSBAR / POMMEL ══ */}
-        {/* Horizontal crossbar */}
-        <rect x="22" y="269" width="38" height="5" rx="2" fill={crossbarColor} />
-        <rect x="24" y="270" width="34" height="3" rx="1" fill={handleLight} opacity="0.3" />
-        {/* Crossbar end caps */}
-        <circle cx="22" cy="271.5" r="4" fill={crossbarColor} />
-        <circle cx="60" cy="271.5" r="4" fill={crossbarColor} />
-        <circle cx="22" cy="271.5" r="2.5" fill={handleLight} opacity="0.3" />
-        <circle cx="60" cy="271.5" r="2.5" fill={handleLight} opacity="0.3" />
-
-        {/* ══ POMMEL RING ══ */}
-        <circle cx="41" cy="282" r="6" fill={crossbarColor} />
-        <circle cx="41" cy="282" r="4" fill={handleColor} />
-        <circle cx="41" cy="282" r="2" fill={bladeGlow} opacity="0.2" />
-      </svg>
-    </div>
-  );
-}
-
-
-// ── Typewriter Effect ──
-function Typewriter({ text, speed = 50, delay = 0 }) {
-  const [displayed, setDisplayed] = useState("");
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStarted(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!started) return;
-    if (displayed.length < text.length) {
-      const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), speed);
-      return () => clearTimeout(t);
-    }
-  }, [displayed, started, text, speed]);
-
-  return (
-    <span>
-      {displayed}
-      {displayed.length < text.length && started && (
-        <span style={{ animation: "blink 0.8s step-end infinite", color: "var(--neon)" }}>▌</span>
-      )}
-    </span>
-  );
-}
-
-// ── Scroll Reveal Hook ──
-function useScrollReveal(threshold = 0.15) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
-      { threshold, rootMargin: "0px 0px -60px 0px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-
-  return [ref, visible];
-}
-
-// ── Animated Counter ──
-function Counter({ target, suffix = "", duration = 2000 }) {
-  const [count, setCount] = useState(0);
-  const [ref, visible] = useScrollReveal();
-
-  useEffect(() => {
-    if (!visible) return;
-    let start = 0;
-    const step = target / (duration / 16);
-    const interval = setInterval(() => {
-      start += step;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(interval);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(interval);
-  }, [visible, target, duration]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
-}
-
-// ── Glitch Text ──
-function GlitchText({ children }) {
-  return (
-    <span className="glitch" data-text={children}>
-      {children}
-    </span>
-  );
-}
-
-// ── Magnetic Button ──
-function MagneticButton({ children, href, className = "" }) {
-  const btnRef = useRef(null);
-
-  const handleMove = (e) => {
-    const btn = btnRef.current;
-    const rect = btn.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
-  };
-  const handleLeave = () => {
-    btnRef.current.style.transform = "translate(0,0)";
-  };
-
-  const Tag = href ? "a" : "button";
-  return (
-    <Tag
-      ref={btnRef}
-      href={href}
-      className={`magnetic-btn ${className}`}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      style={{ transition: "transform 0.25s cubic-bezier(0.23, 1, 0.32, 1)" }}
-    >
-      {children}
-    </Tag>
-  );
-}
-
-// ── Reveal Wrapper ──
-function Reveal({ children, delay = 0, direction = "up" }) {
-  const [ref, visible] = useScrollReveal();
-  const transforms = {
-    up: "translateY(60px)",
-    down: "translateY(-60px)",
-    left: "translateX(60px)",
-    right: "translateX(-60px)",
-    scale: "scale(0.9)",
-  };
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translate(0) scale(1)" : transforms[direction],
-        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
-        willChange: "transform, opacity",
-      }}
-    >
-      {/* NEW: inner wrapper so child (card) can use its own transform animations */}
-      <div style={{ transform: "translateZ(0)" }}>
-        {children}
       </div>
     </div>
   );
 }
 
+// ── Particle Field Background ──
+function ParticleField({ theme }) {
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    const a = new Image();
+    a.src = "/dragon.png";
+    const b = new Image();
+    b.src = "/lightdragon.png";
+    }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let w = (canvas.width = window.innerWidth);
+    let h = (canvas.height = window.innerHeight);
+    const isDark = theme === "dark";
+    const COUNT = 50;
+    const nR = isDark ? 230 : 13;
+    const nG = isDark ? 210 : 138;
+    const nB = isDark ? 0 : 106;
+
+    const particles = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.5 + 0.5,
+    }));
+
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${nR},${nG},${nB},${isDark ? 0.12 : 0.07})`;
+        ctx.fill();
+      }
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const d = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+          if (d < 110) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(${nR},${nG},${nB},${(1 - d / 110) * (isDark ? 0.05 : 0.03)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    const onResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener("resize", onResize);
+    draw();
+    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("resize", onResize); };
+  }, [theme]);
+
+  return <canvas ref={canvasRef} className="particle-canvas" />;
+}
+
+// ── Typewriter ──
+function Typewriter({ text, speed = 50, delay = 0 }) {
+  const [displayed, setDisplayed] = useState("");
+  const [started, setStarted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setStarted(true), delay); return () => clearTimeout(t); }, [delay]);
+  useEffect(() => {
+    if (!started || displayed.length >= text.length) return;
+    const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), speed);
+    return () => clearTimeout(t);
+  }, [displayed, started, text, speed]);
+  return <span>{displayed}{displayed.length < text.length && started && <span className="cursor-blink">▌</span>}</span>;
+}
+
+// ── Scroll Reveal ──
+function useScrollReveal(threshold = 0.15) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold, rootMargin: "0px 0px -60px 0px" });
+    obs.observe(el); return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, visible];
+}
+
+function Reveal({ children, delay = 0, direction = "up" }) {
+  const [ref, visible] = useScrollReveal();
+  const transforms = { up: "translateY(60px)", down: "translateY(-60px)", left: "translateX(60px)", right: "translateX(-60px)", scale: "scale(0.9)" };
+  return (
+    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "none" : transforms[direction], transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`, willChange: "transform, opacity" }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Counter ──
+function Counter({ target, suffix = "", duration = 2000 }) {
+  const [count, setCount] = useState(0);
+  const [ref, visible] = useScrollReveal();
+  useEffect(() => {
+    if (!visible) return;
+    let start = 0; const step = target / (duration / 16);
+    const iv = setInterval(() => { start += step; if (start >= target) { setCount(target); clearInterval(iv); } else setCount(Math.floor(start)); }, 16);
+    return () => clearInterval(iv);
+  }, [visible, target, duration]);
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
 // ── Skill Bar ──
 function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
   const [ref, visible] = useScrollReveal();
-
-return (
-  <div ref={ref} style={{ marginBottom: "1.25rem" }}>
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: "0.4rem",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: "0.9rem",
-          color: "var(--text)",
-        }}
-      >
-        {label}
-      </span>
-
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "0.72rem",
-          color: `rgb(${rgbVar})`,
-        }}
-      >
-        {level}%
-      </span>
-    </div>
-
+  return (
+    <div ref={ref} style={{ marginBottom: "1.25rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+        <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9rem", color: "var(--text)" }}>{label}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: `rgb(${rgbVar})` }}>{level}%</span>
+      </div>
       <div style={{ height: "6px", background: "var(--proficiency-track)", borderRadius: "3px", overflow: "hidden" }}>
-        <div
-          style={{
-            height: "100%",
-            width: visible ? `${level}%` : "0%",
-            background: `linear-gradient(90deg, rgba(${rgbVar}, 1), rgba(${rgbVar}, 0.55))`,
-            borderRadius: "3px",
-            transition: `width 1.2s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
-            boxShadow: visible ? `0 0 12px rgba(${rgbVar}, 0.35)` : "none",
-            willChange: "width",
-          }}
-        />
+        <div style={{ height: "100%", width: visible ? `${level}%` : "0%", background: `linear-gradient(90deg, rgba(${rgbVar}, 1), rgba(${rgbVar}, 0.55))`, borderRadius: "3px", transition: `width 1.2s cubic-bezier(0.16,1,0.3,1) ${delay}ms`, boxShadow: visible ? `0 0 12px rgba(${rgbVar}, 0.35)` : "none" }} />
       </div>
     </div>
   );
@@ -845,47 +265,27 @@ export default function App() {
   const [scrollY, setScrollY] = useState(0);
   const [theme, setTheme] = useState("dark");
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 300);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setHeroReady(true), 800);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  useEffect(() => { const t = setTimeout(() => setLoaded(true), 300); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setHeroReady(true), 800); return () => clearTimeout(t); }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
       const sections = SECTIONS.map((id) => {
         const el = document.getElementById(id);
-        if (!el) return { id, top: 0 };
-        return { id, top: el.getBoundingClientRect().top };
+        return { id, top: el ? el.getBoundingClientRect().top : 0 };
       });
-      const current = sections.reduce((prev, curr) =>
-        Math.abs(curr.top - 100) < Math.abs(prev.top - 100) ? curr : prev
-      );
+      const current = sections.reduce((prev, curr) => Math.abs(curr.top - 100) < Math.abs(prev.top - 100) ? curr : prev);
       setActiveSection(current.id);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMobileNav(false);
-  };
+  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); };
+  const toggleTheme = () => setTheme(p => p === "dark" ? "light" : "dark");
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
-  // ── Data ──
   const skillCategories = [
     { title: "DevOps & CI/CD", Icon: Icons.Gear, color: "var(--neon)", items: ["Jenkins", "GitHub Actions", "CI/CD Pipelines", "Automation", "Prometheus", "Monitoring"] },
     { title: "Cloud & IaC", Icon: Icons.Network, color: "var(--blue)", items: ["Terraform", "AWS VPC", "Infrastructure as Code", "Cloud Deployments", "Docker", "Scalable Systems"] },
@@ -908,19 +308,12 @@ export default function App() {
 
   const education = [
     { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry." },
-    { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization. Building real infrastructure for real deployments." },
+    { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization." },
     { status: "Ongoing", title: "Full-Stack Web Development", desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows." },
     { status: "Ongoing", title: "Linux, Security & IoT", desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards." },
   ];
 
-  const contactIcons = {
-    Email: Icons.Mail,
-    GitHub: Icons.GitHub,
-    WhatsApp: Icons.Phone,
-    Instagram: Icons.Instagram,
-    LinkedIn: Icons.LinkedIn,
-    Location: Icons.MapPin,
-  };
+  const contactIcons = { Email: Icons.Mail, GitHub: Icons.GitHub, WhatsApp: Icons.Phone, Instagram: Icons.Instagram, LinkedIn: Icons.LinkedIn, Location: Icons.MapPin };
 
   const contacts = [
     { iconKey: "Email", label: "Email", value: "eric.dangel.dev@gmail.com", href: "mailto:eric.dangel.dev@gmail.com" },
@@ -931,46 +324,36 @@ export default function App() {
     { iconKey: "Location", label: "Location", value: "United States", href: null },
   ];
 
+  const heroAnim = (d) => ({ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${d}s` });
+
   return (
     <>
-      {/* LOADING SCREEN */}
+      {/* LOADER */}
       <div className={`loader ${loaded ? "done" : ""}`}>
         <div className="loader-text">INITIALIZING</div>
         <div className="loader-bar"><div className="loader-fill" /></div>
       </div>
 
-      {/* OVERLAYS & BACKGROUNDS */}
+      {/* OVERLAYS */}
       <div className="noise" />
       <div className="scanline-overlay" />
-      <AuroraBackground theme={theme} />
-      <ParticleMesh theme={theme} />
-
-      {/* 3D FLOATING SWORD */}
-      <FloatingSword theme={theme} />
+      <ParticleField theme={theme} />
 
       {/* NAV */}
       <nav className={`nav ${scrollY > 50 ? "scrolled" : ""}`}>
         <div className="nav-logo" onClick={() => scrollTo("home")}>
-          <svg width="42" height="42" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="logo-icon">
-            <g transform="translate(256, 250)">
-              <path d="M 0 -190 L 60 80 L 30 50 L 15 160 L 0 120 L -15 160 L -30 50 L -60 80 Z" fill="var(--neon)" />
-              <path d="M -95 -20 C -60 -50, -20 -30, 0 0 C 25 35, 55 70, 100 60 C 120 55, 130 35, 115 20 C 100 5, 70 25, 50 50 C 30 75, -5 80, -35 60 C -55 45, -70 15, -50 -5 Z" fill="var(--bg)" />
-              <path d="M -80 -15 C -50 -40, -15 -25, 10 0 C 35 30, 65 55, 100 48 L 95 58 C 55 68, 25 40, 0 10 C -20 -15, -50 -30, -75 -5 Z" fill="var(--neon)" />
-            </g>
-          </svg>
+          <span className="logo-mark">E<span className="logo-dot">.</span></span>
         </div>
         <button className={`mobile-toggle ${mobileNav ? "open" : ""}`} onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle menu">
-          <svg width="22" height="18" viewBox="0 0 22 18" fill="none" className="hamburger-icon">
+          <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
             <line className="ham-line ham-top" x1="1" y1="2" x2="21" y2="2" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
             <line className="ham-line ham-mid" x1="1" y1="9" x2="21" y2="9" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
             <line className="ham-line ham-bot" x1="1" y1="16" x2="21" y2="16" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
         <div className={`nav-links ${mobileNav ? "open" : ""}`}>
-          {SECTIONS.filter((s) => s !== "home").map((s) => (
-            <button key={s} className={`nav-link ${activeSection === s ? "active" : ""}`} onClick={() => scrollTo(s)}>
-              {s}
-            </button>
+          {SECTIONS.filter(s => s !== "home").map(s => (
+            <button key={s} className={`nav-link ${activeSection === s ? "active" : ""}`} onClick={() => scrollTo(s)}>{s}</button>
           ))}
           <button className="nav-cta" onClick={() => scrollTo("contact")}>Let's Talk</button>
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
@@ -981,32 +364,40 @@ export default function App() {
 
       {/* HERO */}
       <section className="hero" id="home">
-        <div className="hero-inner">
-          <div style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1)" }}>
-            <div className="hero-badge">
-              <span className="dot" />
-              <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
+        <div className="hero-card">
+          <div className="hero-layout">
+            <div className="hero-content">
+              <div style={heroAnim(0)}>
+                <div className="hero-badge">
+                  <span className="dot" />
+                  <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
+                </div>
+              </div>
+              <h1 style={heroAnim(0.2)}>
+                <span className="hero-line1">CIRCUITS,</span>
+                <span className="hero-line2">CODE &</span>
+                <span className="hero-line3">CRAFT<span className="accent">.</span></span>
+              </h1>
+              <p className="hero-sub" style={heroAnim(0.4)}>
+                Aspiring electrician and DevOps engineer blending hands-on trade skills with cloud infrastructure, CI/CD automation, and a love for building things that work.
+              </p>
+              <div className="hero-tags" style={heroAnim(0.5)}>
+                {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(t => (
+                  <span key={t} className="hero-tag">{t}</span>
+                ))}
+              </div>
+              <div className="hero-actions" style={heroAnim(0.6)}>
+                <a href="#projects" className="btn-neon" onClick={(e) => { e.preventDefault(); scrollTo("projects"); }}>
+                  <span>View My Work</span><span>→</span>
+                </a>
+                <a href="#contact" className="btn-ghost" onClick={(e) => { e.preventDefault(); scrollTo("contact"); }}>
+                  <span>Get in Touch</span>
+                </a>
+              </div>
             </div>
-          </div>
-
-          <h1 style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(40px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s" }}>
-            <GlitchText>Circuits,</GlitchText><br />
-            <span className="line2">Code &amp;</span>{" "}
-            <span className="accent">Craft.</span>
-          </h1>
-
-          <p className="hero-sub" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s" }}>
-            Aspiring electrician and DevOps engineer blending hands-on trade skills with cloud infrastructure, CI/CD automation, and a love for building things that work — from panels to pipelines.
-          </p>
-
-          <div className="hero-actions" style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: "all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s" }}>
-            <MagneticButton href="#projects" className="btn-neon">
-              <span>View My Work</span>
-              <span>→</span>
-            </MagneticButton>
-            <MagneticButton href="#contact" className="btn-ghost">
-              <span>Get in Touch</span>
-            </MagneticButton>
+            <div className="hero-visual" style={heroAnim(0.3)}>
+              <DragonHero theme={theme} />
+            </div>
           </div>
         </div>
         <div className="hero-scroll">
@@ -1017,10 +408,7 @@ export default function App() {
 
       {/* ABOUT */}
       <section className="section" id="about">
-        <Reveal>
-          <p className="section-label">01 — About</p>
-          <h2 className="section-title">Who I Am</h2>
-        </Reveal>
+        <Reveal><p className="section-label">01 — About</p><h2 className="section-title">Who I Am</h2></Reveal>
         <div className="about-grid">
           <Reveal delay={100}>
             <div className="about-text">
@@ -1031,22 +419,17 @@ export default function App() {
           </Reveal>
           <Reveal delay={300}>
             <div className="about-stats">
-              <div className="stat-card">
-                <div className="stat-number"><Counter target={10} /></div>
-                <div className="stat-label">Repositories</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number"><Counter target={6} /></div>
-                <div className="stat-label">Skill Domains</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number" style={{ fontSize: "1.75rem" }}>∞</div>
-                <div className="stat-label">Curiosity</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-number" style={{ fontSize: "1.5rem" }}>24/7</div>
-                <div className="stat-label">Always Learning</div>
-              </div>
+              {[
+                { number: <Counter target={10} />, label: "Repositories" },
+                { number: <Counter target={6} />, label: "Skill Domains" },
+                { number: "∞", label: "Curiosity", style: { fontSize: "1.75rem" } },
+                { number: "24/7", label: "Always Learning", style: { fontSize: "1.5rem" } },
+              ].map((s, i) => (
+                <div key={i} className="stat-card">
+                  <div className="stat-number" style={s.style}>{s.number}</div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              ))}
             </div>
           </Reveal>
         </div>
@@ -1068,25 +451,22 @@ export default function App() {
                 </div>
                 <h3>{cat.title}</h3>
                 <div className="skill-tags">
-                  {cat.items.map((item) => (
-                    <span key={item} className="skill-tag">{item}</span>
-                  ))}
+                  {cat.items.map(item => <span key={item} className="skill-tag">{item}</span>)}
                 </div>
               </div>
             </Reveal>
           ))}
         </div>
-
         <Reveal delay={200}>
           <div className="proficiency">
             <h3>// Proficiency Levels</h3>
             <div className="prof-grid">
-            <SkillBar label="Terraform / IaC" level={68} rgbVar="var(--blue-rgb)" delay={0} />
-            <SkillBar label="CI/CD (Jenkins)" level={70} rgbVar="var(--neon-rgb)" delay={100} />
-            <SkillBar label="React / JavaScript" level={65} rgbVar="var(--orange-rgb)" delay={200} />
-            <SkillBar label="Linux Administration" level={75} rgbVar="var(--purple-rgb)" delay={300} />
-            <SkillBar label="Network Security" level={72} rgbVar="var(--yellow-rgb)" delay={400} />
-            <SkillBar label="Electrical Theory" level={70} rgbVar="var(--pink-rgb)" delay={500} />
+              <SkillBar label="Terraform / IaC" level={68} rgbVar="var(--blue-rgb)" delay={0} />
+              <SkillBar label="CI/CD (Jenkins)" level={70} rgbVar="var(--neon-rgb)" delay={100} />
+              <SkillBar label="React / JavaScript" level={65} rgbVar="var(--orange-rgb)" delay={200} />
+              <SkillBar label="Linux Administration" level={75} rgbVar="var(--purple-rgb)" delay={300} />
+              <SkillBar label="Network Security" level={72} rgbVar="var(--yellow-rgb)" delay={400} />
+              <SkillBar label="Electrical Theory" level={70} rgbVar="var(--pink-rgb)" delay={500} />
             </div>
           </div>
         </Reveal>
@@ -1102,25 +482,14 @@ export default function App() {
         <div className="projects-grid">
           {projects.map((proj, i) => (
             <Reveal key={proj.title} delay={i * 80}>
-             <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}
-              style={{ textDecoration: "none", color: "inherit", display: "block", width: "100%" }}>
+              <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}>
                 <div>
-                  <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>
-                    {proj.tag}
-                  </span>
-                  <h3>{proj.title} <span style={{ fontSize: "0.7rem", opacity: 0.5, fontWeight: 400 }}>↗</span></h3>
+                  <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>{proj.tag}</span>
+                  <h3>{proj.title} <span className="arrow-icon">↗</span></h3>
                   <p>{proj.desc}</p>
-                  <div className="project-tech">
-                    {proj.tech.map((t) => (
-                      <span key={t} className="skill-tag">{t}</span>
-                    ))}
-                  </div>
+                  <div className="project-tech">{proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}</div>
                 </div>
-                {proj.featured && (
-                  <div className="project-preview">
-                    <span className="project-preview-text">&lt;NoteStream /&gt;</span>
-                  </div>
-                )}
+                {proj.featured && <div className="project-preview"><span className="project-preview-text">&lt;NoteStream /&gt;</span></div>}
               </a>
             </Reveal>
           ))}
@@ -1161,13 +530,8 @@ export default function App() {
             return (
               <Reveal key={c.label} delay={i * 80}>
                 <a href={c.href || "#"} className="contact-card" target={c.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer">
-                  <div className="contact-icon">
-                    <IconComp size={22} color="var(--neon)" />
-                  </div>
-                  <div>
-                    <div className="contact-label">{c.label}</div>
-                    <div className="contact-value">{c.value}</div>
-                  </div>
+                  <div className="contact-icon"><IconComp size={22} color="var(--neon)" /></div>
+                  <div><div className="contact-label">{c.label}</div><div className="contact-value">{c.value}</div></div>
                 </a>
               </Reveal>
             );
@@ -1178,9 +542,7 @@ export default function App() {
       {/* FOOTER */}
       <footer className="footer">
         <p>© 2026 Eric. Built from scratch with React.</p>
-        <a href="#home" onClick={(e) => { e.preventDefault(); scrollTo("home"); }}>
-          Back to top ↑
-        </a>
+        <a href="#home" onClick={(e) => { e.preventDefault(); scrollTo("home"); }}>Back to top ↑</a>
       </footer>
     </>
   );
