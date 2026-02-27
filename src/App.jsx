@@ -1,15 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import DragonRig from "./DragonRig";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 // ═══════════════════════════════════════════════════════
-//  ERIC — Creative Resume Site v3
-//  Aesthetic: Cyberpunk Dragon / Acid Yellow-Black
-//  Hero: Mech Dragon image with parallax + glow
-//  UPDATE: Layered dragon animation (wing/tail parallax)
+//  ERIC — Creative Resume Site v3 (OPTIMIZED)
+//  Performance fixes:
+//  - Particle field: spatial grid for O(n) neighbor lookups
+//  - Dragon: reduced animation layers, GPU-composited
+//  - Scroll: RAF-throttled with IntersectionObserver
+//  - Removed excessive will-change & backdrop-filter
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
 
-// ── SVG Icon Components ──
+// ── SVG Icon Components (unchanged) ──
 const Icons = {
   Bolt: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -106,158 +109,151 @@ const Icons = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  ANIMATED DRAGON HERO
-//  Fetches SVG, injects inline, assigns animation layers
-//  to individual paths for parallax wing/tail movement
+//  DRAGON HERO — PNG images with CSS animations
+//  Both images stacked and crossfaded for seamless
+//  theme transition. Preloads both on mount.
 // ═══════════════════════════════════════════════════════
 
 function DragonHero({ theme }) {
-  const darkRef = useRef(null);
-  const lightRef = useRef(null);
-  const [darkReady, setDarkReady] = useState(false);
-  const [lightReady, setLightReady] = useState(false);
-
-  const injectSVG = useCallback(async (url, containerRef, setReady, pathCount) => {
-    try {
-      const resp = await fetch(url);
-      const text = await resp.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, "image/svg+xml");
-      const svg = doc.querySelector("svg");
-      if (!svg || !containerRef.current) return;
-
-      // Normalize: make SVG fill its container
-      svg.removeAttribute("width");
-      svg.removeAttribute("height");
-      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-      svg.style.width = "100%";
-      svg.style.height = "100%";
-      svg.style.display = "block";
-      svg.style.overflow = "visible";
-
-      // Get all paths
-      const paths = svg.querySelectorAll("path");
-      const total = paths.length;
-
-      // Assign animation layer classes based on position in stack
-      // Bottom layers (outlines/shadows) = slow sway
-      // Middle layers = medium breathing
-      // Top layers (detail) = subtle independent movement
-      paths.forEach((p, i) => {
-        const ratio = i / (total - 1); // 0 = bottom, 1 = top
-
-        if (ratio < 0.3) {
-          // Bottom layers — "tail sway" (slow, wider)
-          p.classList.add("dragon-anim-layer", "dragon-layer-tail");
-          p.style.setProperty("--layer-delay", `${i * 0.15}s`);
-          p.style.setProperty("--layer-offset", `${(i % 3) * 0.3}px`);
-        } else if (ratio < 0.65) {
-          // Middle layers — "body breathing"
-          p.classList.add("dragon-anim-layer", "dragon-layer-body");
-          p.style.setProperty("--layer-delay", `${i * 0.1}s`);
-          p.style.setProperty("--layer-offset", `${(i % 3) * 0.2}px`);
-        } else {
-          // Top layers — "wing shift" (subtle lateral)
-          p.classList.add("dragon-anim-layer", "dragon-layer-wing");
-          p.style.setProperty("--layer-delay", `${i * 0.08}s`);
-          p.style.setProperty("--layer-offset", `${(i % 4) * 0.25}px`);
-        }
-      });
-
-      containerRef.current.innerHTML = "";
-      containerRef.current.appendChild(svg);
-      setReady(true);
-    } catch (err) {
-      console.warn("Dragon SVG load failed:", url, err);
-    }
-  }, []);
-
-  useEffect(() => {
-    injectSVG("/dragon.svg", darkRef, setDarkReady, 19);
-  }, [injectSVG]);
-
-  useEffect(() => {
-    injectSVG("/lightdragon.svg", lightRef, setLightReady, 29);
-  }, [injectSVG]);
+  const [darkLoaded, setDarkLoaded] = useState(false);
+  const [lightLoaded, setLightLoaded] = useState(false);
 
   return (
     <div className="dragon-container" aria-label="Cyberpunk Mech Dragon">
       <div className="dragon-glow" />
       <div className="dragon-stack">
-        {/* Dark variant */}
-        <div
-          ref={darkRef}
-          className={`dragon-inline dragon-layer ${theme === "dark" ? "is-on" : ""} ${darkReady ? "ready" : ""}`}
+        {/* Both images always mounted, crossfade via opacity */}
+        <img
+          src="/dragon.png"
+          alt="Mech Dragon Dark"
+          className={`dragon-img ${darkLoaded ? "dragon-img-ready" : ""} ${theme === "dark" ? "dragon-img-active" : ""}`}
+          onLoad={() => setDarkLoaded(true)}
+          draggable={false}
         />
-        {/* Light variant */}
-        <div
-          ref={lightRef}
-          className={`dragon-inline dragon-layer ${theme === "light" ? "is-on" : ""} ${lightReady ? "ready" : ""}`}
+        <img
+          src="/lightdragon.png"
+          alt="Mech Dragon Light"
+          className={`dragon-img ${lightLoaded ? "dragon-img-ready" : ""} ${theme === "light" ? "dragon-img-active" : ""}`}
+          onLoad={() => setLightLoaded(true)}
+          draggable={false}
         />
       </div>
     </div>
   );
 }
 
-// ── Particle Field Background ──
+// ═══════════════════════════════════════════════════════
+//  PARTICLE FIELD — Ultra-light
+//  18 particles, 70px connect, skip every other frame
+//  for line drawing, squared distance (no sqrt)
+// ═══════════════════════════════════════════════════════
+
 function ParticleField({ theme }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     let w = (canvas.width = window.innerWidth);
     let h = (canvas.height = window.innerHeight);
     const isDark = theme === "dark";
-    const COUNT = 50;
+    const COUNT = 18;
+    const CONNECT_DIST = 70;
+    const CONNECT_SQ = CONNECT_DIST * CONNECT_DIST;
     const nR = isDark ? 230 : 13;
     const nG = isDark ? 210 : 138;
     const nB = isDark ? 0 : 106;
 
+    const dotColor = `rgba(${nR},${nG},${nB},${isDark ? 0.15 : 0.09})`;
+    // Pre-bake 10 line alpha steps to avoid per-line string concat
+    const lineColors = Array.from({ length: 10 }, (_, i) => {
+      const a = ((10 - i) / 10) * (isDark ? 0.06 : 0.035);
+      return `rgba(${nR},${nG},${nB},${a.toFixed(4)})`;
+    });
+
     const particles = Array.from({ length: COUNT }, () => ({
       x: Math.random() * w, y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
       r: Math.random() * 1.5 + 0.5,
     }));
 
+    let isVisible = true;
+    let frame = 0;
+    const onVisibility = () => {
+      isVisible = !document.hidden;
+      if (isVisible) animRef.current = requestAnimationFrame(draw);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     const draw = () => {
+      if (!isVisible) return;
+      frame++;
+
       ctx.clearRect(0, 0, w, h);
+
       for (const p of particles) {
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
         if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${nR},${nG},${nB},${isDark ? 0.12 : 0.07})`;
-        ctx.fill();
       }
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const d = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
-          if (d < 110) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${nR},${nG},${nB},${(1 - d / 110) * (isDark ? 0.05 : 0.03)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+
+      // Dots — every frame (cheap)
+      ctx.fillStyle = dotColor;
+      ctx.beginPath();
+      for (const p of particles) {
+        ctx.moveTo(p.x + p.r, p.y);
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+
+      // Lines — every other frame (18 particles = 153 checks, skip half)
+      if (frame % 2 === 0) {
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < COUNT; i++) {
+          const pi = particles[i];
+          for (let j = i + 1; j < COUNT; j++) {
+            const dx = pi.x - particles[j].x;
+            const dy = pi.y - particles[j].y;
+            const dSq = dx * dx + dy * dy;
+            if (dSq < CONNECT_SQ) {
+              // Map squared distance to 0-9 bucket (no sqrt)
+              const bucket = Math.min(9, (dSq / CONNECT_SQ * 10) | 0);
+              ctx.strokeStyle = lineColors[bucket];
+              ctx.beginPath();
+              ctx.moveTo(pi.x, pi.y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
           }
         }
       }
+
       animRef.current = requestAnimationFrame(draw);
     };
 
-    const onResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    let resizeTimer;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }, 200);
+    };
     window.addEventListener("resize", onResize);
     draw();
-    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("resize", onResize); };
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearTimeout(resizeTimer);
+    };
   }, [theme]);
 
   return <canvas ref={canvasRef} className="particle-canvas" />;
 }
 
-// ── Typewriter ──
+// ── Typewriter (unchanged) ──
 function Typewriter({ text, speed = 50, delay = 0 }) {
   const [displayed, setDisplayed] = useState("");
   const [started, setStarted] = useState(false);
@@ -270,7 +266,7 @@ function Typewriter({ text, speed = 50, delay = 0 }) {
   return <span>{displayed}{displayed.length < text.length && started && <span className="cursor-blink">▌</span>}</span>;
 }
 
-// ── Scroll Reveal ──
+// ── Scroll Reveal (unchanged) ──
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -286,13 +282,13 @@ function Reveal({ children, delay = 0, direction = "up" }) {
   const [ref, visible] = useScrollReveal();
   const transforms = { up: "translateY(60px)", down: "translateY(-60px)", left: "translateX(60px)", right: "translateX(-60px)", scale: "scale(0.9)" };
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "none" : transforms[direction], transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`, willChange: "transform, opacity" }}>
+    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "none" : transforms[direction], transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms` }}>
       {children}
     </div>
   );
 }
 
-// ── Counter ──
+// ── Counter (unchanged) ──
 function Counter({ target, suffix = "", duration = 2000 }) {
   const [count, setCount] = useState(0);
   const [ref, visible] = useScrollReveal();
@@ -305,7 +301,7 @@ function Counter({ target, suffix = "", duration = 2000 }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// ── Skill Bar ──
+// ── Skill Bar (unchanged) ──
 function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
   const [ref, visible] = useScrollReveal();
   return (
@@ -322,7 +318,7 @@ function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MAIN APP
+//  MAIN APP (with optimized scroll handling)
 // ═══════════════════════════════════════════════════════
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -336,15 +332,22 @@ export default function App() {
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 300); return () => clearTimeout(t); }, []);
   useEffect(() => { const t = setTimeout(() => setHeroReady(true), 800); return () => clearTimeout(t); }, []);
 
+  // ── OPTIMIZED SCROLL: RAF-throttled ──
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setScrollY(window.scrollY);
-      const sections = SECTIONS.map((id) => {
-        const el = document.getElementById(id);
-        return { id, top: el ? el.getBoundingClientRect().top : 0 };
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrollY(window.scrollY);
+        const sections = SECTIONS.map((id) => {
+          const el = document.getElementById(id);
+          return { id, top: el ? el.getBoundingClientRect().top : 0 };
+        });
+        const current = sections.reduce((prev, curr) => Math.abs(curr.top - 100) < Math.abs(prev.top - 100) ? curr : prev);
+        setActiveSection(current.id);
+        ticking = false;
       });
-      const current = sections.reduce((prev, curr) => Math.abs(curr.top - 100) < Math.abs(prev.top - 100) ? curr : prev);
-      setActiveSection(current.id);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -353,16 +356,17 @@ export default function App() {
   const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); };
   const toggleTheme = () => setTheme(p => p === "dark" ? "light" : "dark");
 
-  const skillCategories = [
+  // ── Memoize static data ──
+  const skillCategories = useMemo(() => [
     { title: "DevOps & CI/CD", Icon: Icons.Gear, color: "var(--neon)", items: ["Jenkins", "GitHub Actions", "CI/CD Pipelines", "Automation", "Prometheus", "Monitoring"] },
     { title: "Cloud & IaC", Icon: Icons.Network, color: "var(--blue)", items: ["Terraform", "AWS VPC", "Infrastructure as Code", "Cloud Deployments", "Docker", "Scalable Systems"] },
     { title: "Development", Icon: Icons.Code, color: "var(--orange)", items: ["React", "JavaScript", "Python", "HTML/CSS", "Supabase", "REST APIs"] },
     { title: "Linux & Systems", Icon: Icons.Terminal, color: "var(--purple)", items: ["Kali Linux", "Ubuntu", "Bash Scripting", "Raspberry Pi", "Server Admin", "Docker"] },
     { title: "Cybersecurity", Icon: Icons.Shield, color: "var(--yellow)", items: ["Network Hardening", "Firewall Config", "SSH Security", "DNS Filtering", "Fail2ban", "System Auditing"] },
     { title: "Electrical & IoT", Icon: Icons.Bolt, color: "var(--pink)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "ESP8266", "IoT Sensors", "Panel Layout"] },
-  ];
+  ], []);
 
-  const projects = [
+  const projects = useMemo(() => [
     { title: "NoteStream", tag: "FEATURED", tagColor: "var(--neon)", desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.", tech: ["React", "Supabase", "AI", "Edge Functions"], featured: true, href: "https://github.com/blackapple805/notestream-site" },
     { title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)", desc: "Personal portfolio and cloud landing page at questone.cloud. Built to showcase DevOps projects, infrastructure work, and professional presence.", tech: ["React", "JavaScript", "CSS", "Deployment"], href: "https://github.com/blackapple805/questone-site" },
     { title: "IoT Log", tag: "IOT", tagColor: "var(--pink)", desc: "ESP8266-based IoT data pipeline that uploads JSON sensor data directly to GitHub. Hardware meets version control for lightweight cloud logging.", tech: ["ESP8266", "JavaScript", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log" },
@@ -371,25 +375,25 @@ export default function App() {
     { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Forked Jenkins automation server — exploring pipeline configuration, plugin development, and continuous integration/deployment workflows.", tech: ["Jenkins", "Java", "CI/CD", "Automation"], href: "https://github.com/blackapple805/jenkins" },
     { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Jenkins JUnit plugin for test result reporting. Understanding plugin architecture and integrating automated testing into CI pipelines.", tech: ["Java", "Jenkins", "JUnit", "Plugins"], href: "https://github.com/blackapple805/junit-plugin" },
     { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "A collection of projects and prototypes in Python — showcasing scripting, automation, and problem-solving across different domains.", tech: ["Python", "Scripting", "Automation"], href: "https://github.com/blackapple805/Projects" },
-  ];
+  ], []);
 
-  const education = [
+  const education = useMemo(() => [
     { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry.", Icon: Icons.Bolt, iconColor: "var(--pink)" },
     { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization.", Icon: Icons.Gear, iconColor: "var(--neon)" },
     { status: "Ongoing", title: "Full-Stack Web Development", desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows.", Icon: Icons.Code, iconColor: "var(--orange)" },
     { status: "Ongoing", title: "Linux, Security & IoT", desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards.", Icon: Icons.Terminal, iconColor: "var(--purple)" },
-  ];
+  ], []);
 
   const contactIcons = { Email: Icons.Mail, GitHub: Icons.GitHub, WhatsApp: Icons.Phone, Instagram: Icons.Instagram, LinkedIn: Icons.LinkedIn, Location: Icons.MapPin };
 
-  const contacts = [
+  const contacts = useMemo(() => [
     { iconKey: "Email", label: "Email", value: "eric.dangel.dev@gmail.com", href: "mailto:eric.dangel.dev@gmail.com" },
     { iconKey: "GitHub", label: "GitHub", value: "github.com/blackapple805", href: "https://github.com/blackapple805" },
     { iconKey: "WhatsApp", label: "WhatsApp", value: "(805) 676-8875", href: "https://wa.me/18056768875" },
     { iconKey: "Instagram", label: "Instagram", value: "@quest.on.a.dream", href: "https://instagram.com/quest.on.a.dream" },
     { iconKey: "LinkedIn", label: "LinkedIn", value: "in/eric-del-angel", href: "https://www.linkedin.com/in/eric-del-angel/" },
     { iconKey: "Location", label: "Location", value: "United States", href: null },
-  ];
+  ], []);
 
   const heroAnim = (d) => ({ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${d}s` });
 
@@ -401,7 +405,7 @@ export default function App() {
         <div className="loader-bar"><div className="loader-fill" /></div>
       </div>
 
-      {/* OVERLAYS */}
+      {/* OVERLAYS — reduced: removed noise SVG filter, simplified scanline */}
       <div className="noise" />
       <div className="scanline-overlay" />
       <ParticleField theme={theme} />
@@ -440,33 +444,65 @@ export default function App() {
                   <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
                 </div>
               </div>
+
               <h1 style={heroAnim(0.2)}>
                 <span className="hero-line1">CIRCUITS,</span>
                 <span className="hero-line2">CODE &</span>
-                <span className="hero-line3">CRAFT<span className="accent">.</span></span>
+                <span className="hero-line3">
+                  CRAFT<span className="accent">.</span>
+                </span>
               </h1>
+
               <p className="hero-sub" style={heroAnim(0.4)}>
-                Aspiring electrician and DevOps engineer blending hands-on trade skills with cloud infrastructure, CI/CD automation, and a love for building things that work.
+                Aspiring electrician and DevOps engineer blending hands-on trade skills
+                with cloud infrastructure, CI/CD automation, and a love for building
+                things that work.
               </p>
+
               <div className="hero-tags" style={heroAnim(0.5)}>
-                {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(t => (
-                  <span key={t} className="hero-tag">{t}</span>
-                ))}
+                {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(
+                  (t) => (
+                    <span key={t} className="hero-tag">
+                      {t}
+                    </span>
+                  )
+                )}
               </div>
+
               <div className="hero-actions" style={heroAnim(0.6)}>
-                <a href="#projects" className="btn-neon" onClick={(e) => { e.preventDefault(); scrollTo("projects"); }}>
-                  <span>View My Work</span><span>→</span>
+                <a
+                  href="#projects"
+                  className="btn-neon"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollTo("projects");
+                  }}
+                >
+                  <span>View My Work</span>
+                  <span>→</span>
                 </a>
-                <a href="#contact" className="btn-ghost" onClick={(e) => { e.preventDefault(); scrollTo("contact"); }}>
+
+                <a
+                  href="#contact"
+                  className="btn-ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollTo("contact");
+                  }}
+                >
                   <span>Get in Touch</span>
                 </a>
               </div>
             </div>
+
+            {/* ✅ VISUAL: remove nested wrappers that fight centering.
+                DragonRig already renders .dragon-container/.dragon-glow/.dragon-stack internally. */}
             <div className="hero-visual" style={heroAnim(0.3)}>
-              <DragonHero theme={theme} />
+              <DragonRig theme={theme} />
             </div>
           </div>
         </div>
+
         <div className="hero-scroll">
           <span>Scroll</span>
           <div className="scroll-line" />

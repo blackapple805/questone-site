@@ -1,7 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* ═══════════════════════════════════════════════════════
-   THEME SYSTEM — Acid Neon Cyberpunk (NO WHITE FLASH)
+   THEME SYSTEM — Acid Neon Cyberpunk
+   OPTIMIZED: Removed excessive will-change, reduced
+   backdrop-filter usage, simplified animation layers
    ═══════════════════════════════════════════════════════ */
 
 html, body {
@@ -26,13 +28,7 @@ html, body {
 
   --bg: #0a0a0a;
   --text: #f0f0f0;
-
-  /* ── Dragon sizing tokens (single source of truth) ── */
   --dragon-size: clamp(340px, 38vw, 680px);
-}
-
-html, body {
-  background-color: var(--bg);
 }
 
 html:not([data-theme]) *,
@@ -78,7 +74,7 @@ html[data-theme="dark"] {
   --card-shadow-hover: 0 20px 60px rgba(0,0,0,0.5);
   --glow-strength: 0.25;
   --noise-opacity: 0.025;
-  --nav-bg: rgba(10,10,10,0.88);
+  --nav-bg: rgba(10,10,10,0.96);
   --loader-bg: #0a0a0a;
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #2a2a2a;
@@ -123,7 +119,7 @@ html[data-theme="light"]{
   --card-shadow-hover: 0 12px 40px rgba(0,0,0,0.1);
   --glow-strength: 0.12;
   --noise-opacity: 0.008;
-  --nav-bg: rgba(255,255,255,0.92);
+  --nav-bg: rgba(255,255,255,0.97);
   --loader-bg: #ffffff;
   --scrollbar-track: #ffffff;
   --scrollbar-thumb: #d1d5db;
@@ -203,18 +199,29 @@ html[data-theme][data-theme-ready] body {
   transition: var(--transition-theme);
 }
 
-a, button,
+/* ═══════════════════════════════════════════════════════
+   PERF FIX: Removed blanket will-change from all cards.
+   Only apply will-change on hover via JS or :hover,
+   and use CSS containment for layout isolation.
+   ═══════════════════════════════════════════════════════ */
+
 .stat-card,
 .skill-card,
 .project-card,
-.edu-item,
 .contact-card {
-  transform: translateZ(0);
-  will-change: transform, box-shadow;
+  contain: layout style;   /* ← isolates reflow/repaint */
   transition:
     transform 320ms var(--ease-out),
     box-shadow 320ms var(--ease-out),
     border-color 320ms var(--ease-out);
+}
+
+/* Only promote to GPU layer on hover (not permanently) */
+.stat-card:hover,
+.skill-card:hover,
+.project-card:hover,
+.contact-card:hover {
+  will-change: transform;
 }
 
 .stat-card::after,
@@ -312,91 +319,77 @@ canvas.particle-canvas {
 }
 
 /* ═══════════════════════════════════════════════════════
-   DRAGON LAYER ANIMATIONS
-   Three tiers: tail (slow wide sway), body (breathing),
-   wing (subtle lateral shift). Each path gets a
-   --layer-delay CSS variable for stagger.
+   DRAGON ANIMATION — PNG Image Version
+   Both images stacked at identical size, crossfade on
+   theme toggle. Animation simulates wing flap, tail
+   sway, and breathing — more pronounced movement.
    ═══════════════════════════════════════════════════════ */
 
-/* Tail layers — slow lateral sway + slight vertical float */
-@keyframes dragonTailSway {
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  15%  { transform: translate(1.2px, -0.5px) rotate(0.12deg); }
-  35%  { transform: translate(-1.5px, 0.8px) rotate(-0.15deg); }
-  55%  { transform: translate(0.8px, -1px) rotate(0.08deg); }
-  75%  { transform: translate(-0.6px, 0.3px) rotate(-0.06deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
+/* Main motion — combines float + tilt for wing-like feel.
+   Asymmetric keyframes so it doesn't look mechanical. */
+@keyframes dragonFly {
+  0%   { transform: translateY(0)    rotate(0deg)    scale(1); }
+  15%  { transform: translateY(-6px)  rotate(0.6deg)  scale(1.005); }
+  30%  { transform: translateY(-12px) rotate(-0.3deg) scale(1.01); }
+  45%  { transform: translateY(-7px)  rotate(0.8deg)  scale(1.006); }
+  60%  { transform: translateY(-14px) rotate(-0.5deg) scale(1.012); }
+  75%  { transform: translateY(-5px)  rotate(0.4deg)  scale(1.003); }
+  90%  { transform: translateY(-10px) rotate(-0.2deg) scale(1.008); }
+  100% { transform: translateY(0)     rotate(0deg)    scale(1); }
 }
 
-/* Body layers — vertical breathing pulse */
-@keyframes dragonBodyBreathe {
-  0%   { transform: translate(0, 0) scale(1); }
-  20%  { transform: translate(0.2px, -1.5px) scale(1.003); }
-  40%  { transform: translate(-0.3px, -2.5px) scale(1.006); }
-  60%  { transform: translate(0.1px, -1.8px) scale(1.004); }
-  80%  { transform: translate(-0.1px, -0.8px) scale(1.001); }
-  100% { transform: translate(0, 0) scale(1); }
+/* Lateral tail sway — side to side drift */
+@keyframes dragonSway {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(5px); }
+  40%      { transform: translateX(-4px); }
+  60%      { transform: translateX(6px); }
+  80%      { transform: translateX(-3px); }
 }
 
-/* Wing layers — lateral shift with slight rotation */
-@keyframes dragonWingShift {
-  0%   { transform: translate(0, 0) rotate(0deg) skewX(0deg); }
-  18%  { transform: translate(1px, -0.8px) rotate(0.2deg) skewX(0.05deg); }
-  38%  { transform: translate(-0.5px, -1.5px) rotate(-0.12deg) skewX(-0.03deg); }
-  58%  { transform: translate(1.2px, -0.5px) rotate(0.15deg) skewX(0.04deg); }
-  78%  { transform: translate(-0.3px, -0.2px) rotate(-0.05deg) skewX(-0.01deg); }
-  100% { transform: translate(0, 0) rotate(0deg) skewX(0deg); }
-}
-
-/* Glow pulse for entire dragon */
+/* Glow pulse behind dragon */
 @keyframes dragonGlowPulse {
-  0%   { opacity: 0.5; transform: scale(1); }
-  25%  { opacity: 0.75; transform: scale(1.04); }
-  50%  { opacity: 1; transform: scale(1.1); }
-  75%  { opacity: 0.7; transform: scale(1.05); }
-  100% { opacity: 0.5; transform: scale(1); }
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.8; transform: scale(1.06); }
 }
 
-/* Apply animations to injected path layers */
-.dragon-anim-layer {
-  transform-origin: center center;
-  will-change: transform;
+/* Both images stacked at identical size via grid overlap */
+.dragon-img {
+  grid-area: 1 / 1;         /* stack both in same cell */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+
+  /* Combined wing-flap + tail-sway animation.
+     8s and 6s are coprime-ish → 24s before pattern repeats */
+  animation:
+    dragonFly 8s ease-in-out infinite,
+    dragonSway 6s ease-in-out infinite;
 }
 
-.dragon-layer-tail {
-  animation: dragonTailSway 7s ease-in-out infinite;
-  animation-delay: var(--layer-delay, 0s);
+/* Show whichever matches current theme — smooth crossfade */
+.dragon-img.dragon-img-ready.dragon-img-active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.dragon-layer-body {
-  animation: dragonBodyBreathe 5.5s ease-in-out infinite;
-  animation-delay: var(--layer-delay, 0s);
-}
-
-.dragon-layer-wing {
-  animation: dragonWingShift 6s ease-in-out infinite;
-  animation-delay: var(--layer-delay, 0s);
-}
-
-/* Enhanced drop shadows on the injected SVG */
-.dragon-inline svg {
-  filter:
-    drop-shadow(0 0 20px rgba(var(--neon-rgb), 0.2))
-    drop-shadow(0 0 50px rgba(var(--neon-rgb), 0.1));
-  transition: filter 0.6s ease;
-}
-
-.dragon-inline:hover svg {
-  filter:
-    drop-shadow(0 0 30px rgba(var(--neon-rgb), 0.35))
-    drop-shadow(0 0 70px rgba(var(--neon-rgb), 0.18));
+/* Hover: slight lift + brighten */
+.dragon-container:hover .dragon-img-active {
+  filter: brightness(1.06);
+  transition: filter 0.3s ease;
 }
 
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .dragon-layer-tail,
-  .dragon-layer-body,
-  .dragon-layer-wing,
+  .dragon-img,
   .dragon-glow {
     animation: none !important;
   }
@@ -421,28 +414,35 @@ canvas.particle-canvas {
 .loader-fill { height: 100%; background: var(--neon); border-radius: 1px; animation: loadFill 1s ease forwards; box-shadow: 0 0 12px rgba(var(--neon-rgb), 0.5); }
 
 /* ═══════════════════════════════════════════════════════
-   OVERLAYS
+   OVERLAYS — OPTIMIZED
+   - Noise: use a tiny CSS gradient instead of inline SVG
+     with feTurbulence filter (filters are GPU-heavy)
+   - Scanline: unchanged (lightweight)
    ═══════════════════════════════════════════════════════ */
 
 .noise {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 9998;
   opacity: var(--noise-opacity);
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size: 256px;
+  /* ── PERF FIX: Replace feTurbulence SVG filter with a
+     lightweight repeating CSS noise pattern. The SVG filter
+     was being re-rendered on every composite. ── */
+  background-image:
+    repeating-conic-gradient(
+      rgba(128,128,128,0.04) 0% 25%,
+      transparent 0% 50%
+    );
+  background-size: 4px 4px;
 }
 
-.scanline-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
-.scanline-overlay::after {
-  content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-  background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.06), transparent);
-  animation: scanline 6s linear infinite;
-}
+/* Scanline removed — fixed-position animation across full viewport
+   was creating an extra compositing layer for minimal visual effect */
+.scanline-overlay { display: none; }
 
 .particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
 /* ═══════════════════════════════════════════════════════
-   DRAGON HERO — Consistent sizing via token
+   DRAGON HERO
    ═══════════════════════════════════════════════════════ */
 
 .dragon-container {
@@ -451,15 +451,16 @@ canvas.particle-canvas {
   align-items: center;
   justify-content: center;
   width: 100%;
+  contain: layout style;
 }
 
 .dragon-glow {
   position: absolute;
-  width: 80%;
-  height: 80%;
+  width: 120%;
+  height: 120%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--neon-rgb), 0.18), transparent 65%);
-  filter: blur(50px);
+  /* Pre-soft radial gradient instead of filter: blur(50px) */
+  background: radial-gradient(circle, rgba(var(--neon-rgb), 0.12), rgba(var(--neon-rgb), 0.04) 40%, transparent 70%);
   pointer-events: none;
   animation: dragonGlowPulse 6s ease-in-out infinite;
   transition: background 0.6s ease;
@@ -469,34 +470,37 @@ canvas.particle-canvas {
   position: relative;
   display: grid;
   place-items: center;
-
-  /* ── Consistent size on ALL breakpoints ── */
   width: var(--dragon-size);
   max-width: 100%;
-  aspect-ratio: 3 / 2;  /* keeps proportions stable */
+  aspect-ratio: 3 / 2;
+  /* Both <img> tags occupy the same grid cell = identical size */
 }
 
-/* Inline-injected dragon containers */
-.dragon-inline {
+.dragon-stack-svg {
+  width: var(--dragon-size);
+  max-width: 100%;
+  aspect-ratio: 3 / 2;
+  display: grid;
+  place-items: center;
+}
+
+.dragon-svg {
   grid-area: 1 / 1;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 400ms var(--ease-out);
-  will-change: opacity;
-  pointer-events: none;
-  overflow: visible;
+  opacity: 1;
 }
 
-.dragon-inline.is-on {
-  opacity: 1;
+.dragon-svg svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* ═══════════════════════════════════════════════════════
    NAVIGATION
+   ── PERF FIX: backdrop-filter only on nav (it's small
+   and always visible). Removed from all cards below. ──
    ═══════════════════════════════════════════════════════ */
 
 .nav {
@@ -504,7 +508,6 @@ canvas.particle-canvas {
   padding: 0 2rem; height: 70px;
   display: flex; align-items: center; justify-content: space-between;
   background: var(--nav-bg);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid transparent;
   transition: all 0.3s;
 }
@@ -582,7 +585,6 @@ canvas.particle-canvas {
   -webkit-tap-highlight-color: transparent;
 }
 .mobile-toggle:hover { background: rgba(var(--neon-rgb), 0.06); transform: translateY(-1px); }
-.mobile-toggle:hover svg { transform: scale(1.03); }
 
 .mobile-toggle.open .ham-top { transform: translateY(7px) rotate(45deg); stroke: var(--neon); }
 .mobile-toggle.open .ham-mid { opacity: 0; transform: scaleX(0); }
@@ -590,6 +592,10 @@ canvas.particle-canvas {
 
 /* ═══════════════════════════════════════════════════════
    HERO
+   ═══════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════
+   HERO — UPDATED (text containment + mobile-safe)
    ═══════════════════════════════════════════════════════ */
 
 .hero {
@@ -600,6 +606,7 @@ canvas.particle-canvas {
   padding: 5rem 1.5rem 3rem;
 }
 
+/* IMPORTANT: allow grid children to shrink so text never forces overflow */
 .hero-layout {
   width: 100%;
   max-width: 1300px;
@@ -608,19 +615,26 @@ canvas.particle-canvas {
   grid-template-columns: 1.1fr 1fr;
   gap: 3rem;
   align-items: center;
+
+  min-width: 0;
 }
 
 .hero-content {
   position: relative; z-index: 2;
   text-align: left;
   display: flex; flex-direction: column; align-items: flex-start;
+
+  min-width: 0; /* prevents overflow in grid */
 }
 
 .hero-visual {
   display: flex; align-items: center; justify-content: center;
   position: relative;
+
+  min-width: 0; /* prevents overflow in grid */
 }
 
+/* Badge: allow wrapping on small screens / long strings */
 .hero-badge {
   display: inline-flex; align-items: center; gap: 0.5rem;
   font-family: var(--font-mono); font-size: 0.7rem;
@@ -631,9 +645,23 @@ canvas.particle-canvas {
   margin-bottom: 2rem;
   animation: glowPulse 3s ease infinite;
   letter-spacing: 0.06em;
-}
-.hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon); animation: blink 1.5s ease infinite; }
 
+  max-width: 100%;
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.hero-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--neon);
+  animation: blink 1.5s ease infinite;
+}
+.hero-badge *{
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Headline: keep within card even if a word gets long */
 .hero h1 {
   font-family: var(--font-display);
   font-size: clamp(3.2rem, 7vw, 6rem);
@@ -642,17 +670,32 @@ canvas.particle-canvas {
   letter-spacing: -0.05em;
   margin-bottom: 1.5rem;
   display: flex; flex-direction: column;
+
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
-.hero-line1 { color: var(--text); display: block; }
-.hero-line2 { color: transparent; -webkit-text-stroke: 2px var(--stroke-color); display: block; }
-.hero-line3 { color: var(--text); display: block; }
+.hero-line1 { color: var(--text); display: block; max-width: 100%; }
+.hero-line2 { color: transparent; -webkit-text-stroke: 2px var(--stroke-color); display: block; max-width: 100%; }
+.hero-line3 { color: var(--text); display: block; max-width: 100%; }
 .hero-line3 .accent { color: var(--neon); }
 
-.hero-sub {
+.hero-sub{
   font-family: var(--font-body);
-  font-size: 1.05rem; color: var(--text2);
-  max-width: 480px; line-height: 1.75; margin-bottom: 1.5rem;
+  font-size: 1.05rem;
+  color: var(--text2);
+  max-width: min(480px, 100%);
+  line-height: 1.75;
+  margin-bottom: 1.5rem;
+
+  /* keep long strings/URLs contained */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .hero-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
@@ -693,6 +736,34 @@ canvas.particle-canvas {
 }
 .scroll-line { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--neon), transparent); }
 
+/* ──────────────────────────────────────────────────────
+   MOBILE-SAFE ADDITIONS (keeps hero text from bleeding)
+   Keep this with the HERO block, or copy into your existing
+   @media (max-width: 768px) section if you prefer.
+   ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-content { width: 100%; }
+
+  .hero h1,
+  .hero-sub {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-badge {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.4rem 0.85rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-badge {
+    font-size: 0.62rem;
+    padding: 0.38rem 0.8rem;
+  }
+}
 /* ═══════════════════════════════════════════════════════
    BUTTONS
    ═══════════════════════════════════════════════════════ */
@@ -769,9 +840,17 @@ canvas.particle-canvas {
 
 .about-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+/* ═══════════════════════════════════════════════════════
+   CARD STYLES — PERF FIX
+   Removed backdrop-filter from ALL cards.
+   Using solid/semi-transparent backgrounds instead.
+   backdrop-filter on 20+ cards = 20+ blur composites
+   every frame during scroll.
+   ═══════════════════════════════════════════════════════ */
+
 .stat-card {
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  /* backdrop-filter REMOVED — was causing recomposite on scroll */
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 1.6rem; text-align: center;
   transition: all 0.3s var(--ease-out);
@@ -812,7 +891,6 @@ canvas.particle-canvas {
 
 .skill-card{
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 2rem 1.75rem;
   transition: all 0.35s var(--ease-out);
@@ -870,7 +948,6 @@ canvas.particle-canvas {
 .proficiency{
   margin-top: 4rem;
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 2.5rem;
   transition: var(--transition-theme);
@@ -895,7 +972,6 @@ canvas.particle-canvas {
 
 .project-card{
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 2rem;
   transition:
@@ -905,7 +981,11 @@ canvas.particle-canvas {
   position: relative; overflow: hidden;
   cursor: pointer; text-decoration: none; color: inherit; display: block;
   padding-top: 3.25rem;
+
+  /* IMPORTANT: allow grid item to shrink (prevents overflow) */
+  min-width: 0;
 }
+
 .project-card:hover{
   transform: translateY(-6px);
   border-color: rgba(var(--neon-rgb), 0.18);
@@ -924,7 +1004,12 @@ canvas.particle-canvas {
   gap: 2.5rem; align-items: center;
   padding-top: 3.25rem; text-align: left;
 }
-.project-card.featured > div{ align-self: start; }
+.project-card.featured > div{
+  align-self: start;
+
+  /* IMPORTANT: children can shrink in featured grid */
+  min-width: 0;
+}
 
 .project-tag{
   position: absolute; top: 1.1rem; left: 1.1rem;
@@ -944,6 +1029,7 @@ canvas.particle-canvas {
   margin-bottom: 0.75rem; letter-spacing: -0.02em;
   display: inline-flex; align-items: center; gap: 0.5rem;
 }
+
 .arrow-icon{
   display: inline-flex; align-items: center; justify-content: center;
   opacity: 0.55; transform: translateY(-0.5px);
@@ -955,9 +1041,19 @@ canvas.particle-canvas {
 
 .project-card p{
   font-family: var(--font-body);
-  font-size: 0.95rem; color: var(--text2);
-  line-height: 1.7; max-width: 58ch; margin: 0 auto;
+  font-size: 0.95rem;
+  color: var(--text2);
+  line-height: 1.7;
+  max-width: min(58ch, 100%);
+  margin: 0 auto;
+
+  /* keep long strings/URLs contained */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
+
 .project-tech{
   display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.25rem;
 }
@@ -969,16 +1065,24 @@ canvas.particle-canvas {
   border-radius: 12px; height: 220px;
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
+
+  /* prevent preview area from forcing overflow */
+  min-width: 0;
 }
 .project-preview-text{
   font-family: var(--font-mono);
   font-size: 0.85rem; color: var(--neon); z-index: 1;
+
+  /* keep any long preview text contained */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 .project-preview::before{
   content: ''; position: absolute; top: -50%; left: -50%;
   width: 200%; height: 200%;
   background: conic-gradient(from 0deg, transparent, rgba(var(--neon-rgb), 0.05), transparent, rgba(var(--orange-rgb), 0.05), transparent);
-  animation: gradientShift 8s linear infinite;
+  /* Removed gradientShift — continuous animation on large pseudo-element */
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -993,6 +1097,18 @@ canvas.particle-canvas {
   position: relative; display: grid;
   grid-template-columns: 44px 1fr; gap: 0.85rem;
   align-items: start;
+  background: transparent; overflow: visible;
+  box-shadow: none !important;
+
+  /* IMPORTANT: allow grid child to shrink */
+  min-width: 0;
+}
+.edu-item::before,
+.edu-item::after{
+  content: none !important;
+}
+.edu-item:hover{
+  transform: translateX(6px);
 }
 .edu-rail{
   position: relative; width: 44px; min-height: 100%;
@@ -1022,12 +1138,14 @@ canvas.particle-canvas {
 
 .edu-card{
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 2rem;
   transition: transform 0.3s var(--ease-out),
               box-shadow 0.3s var(--ease-out),
               border-color 0.3s var(--ease-out);
+
+  /* IMPORTANT: allow text to wrap without forcing overflow */
+  min-width: 0;
 }
 .edu-card:hover{
   border-color: rgba(var(--neon-rgb), 0.3);
@@ -1046,7 +1164,16 @@ canvas.particle-canvas {
 }
 .edu-card p{
   font-family: var(--font-body);
-  font-size: 0.95rem; color: var(--text2); line-height: 1.75;
+  font-size: 0.95rem;
+  color: var(--text2);
+  line-height: 1.75;
+
+  /* keep long strings/URLs contained */
+  white-space: normal;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1057,7 +1184,6 @@ canvas.particle-canvas {
 
 .contact-card {
   background: var(--card-glass);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-glass-border); border-radius: 14px;
   padding: 2rem; display: flex; align-items: center; gap: 1.25rem;
   text-decoration: none; color: inherit;
@@ -1074,8 +1200,17 @@ canvas.particle-canvas {
 .contact-card:hover .contact-icon { background: rgba(var(--neon-rgb), 0.15); box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.15); transform: scale(1.05); }
 
 .contact-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
-.contact-value { font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; }
+.contact-value{
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
 
+  /* keep long strings/URLs contained */
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
 /* ═══════════════════════════════════════════════════════
    FOOTER
    ═══════════════════════════════════════════════════════ */
@@ -1090,6 +1225,8 @@ canvas.particle-canvas {
 .footer a { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text2); text-decoration: none; transition: color 0.2s; }
 .footer a:hover { color: var(--neon); }
 
+
+
 /* ═══════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════ */
@@ -1102,74 +1239,198 @@ canvas.particle-canvas {
 @media (max-width: 1024px) {
   :root { --dragon-size: clamp(320px, 60vw, 520px); }
 
-  .hero-layout { grid-template-columns: 1fr; text-align: left; }
-  .hero-content { display: flex; flex-direction: column; align-items: flex-start; }
+  .hero-layout {
+    grid-template-columns: 1fr;
+    text-align: left;
+    align-items: start;
+  }
+
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .hero-sub { max-width: 520px; }
   .hero-tags { justify-content: flex-start; }
   .hero-actions { justify-content: flex-start; }
-  .hero-visual { margin-top: 2rem; justify-content: center; }
+
+  /* visual block can center */
+  .hero-visual {
+    margin-top: 2rem;
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  .hero-visual .dragon-container {
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  .hero-visual .dragon-stack {
+    width: var(--dragon-size);
+    max-width: 100%;
+    margin-inline: auto;
+    justify-self: center;
+  }
 }
 
 @media (max-width: 900px) {
   .skills-grid { grid-template-columns: 1fr 1fr; }
   .prof-grid { grid-template-columns: 1fr; }
 
-  .projects-grid{ grid-template-columns: 1fr; }
-  .project-card.featured{
-    grid-template-columns: 1fr; gap: 1.25rem;
-    padding: 1.85rem 1.5rem; text-align: center; align-items: start;
+  .projects-grid { grid-template-columns: 1fr; }
+  .project-card.featured {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.85rem 1.5rem;
+    text-align: center;
+    align-items: start;
   }
-  .project-card.featured .project-title{ justify-content: center; }
-  .project-card.featured .project-tech{ justify-content: center; }
-  .project-card.featured .project-preview{
-    width: 100%; max-width: 520px;
-    margin: 0.25rem auto 0; height: clamp(170px, 32vw, 220px);
+  .project-card.featured .project-title { justify-content: center; }
+  .project-card.featured .project-tech { justify-content: center; }
+  .project-card.featured .project-preview {
+    width: 100%;
+    max-width: 520px;
+    margin: 0.25rem auto 0;
+    height: clamp(170px, 32vw, 220px);
   }
 }
 
 @media (max-width: 768px) {
   :root { --dragon-size: min(86vw, 440px); }
 
+  .hero-sub {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
   .mobile-toggle { display: flex; }
 
-  .hero-card { padding: 2rem 1.25rem; border-radius: 1.25rem; }
+  .hero-card {
+    padding: 2rem 1.25rem;
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
   .dragon-glow { transition: none; }
-  .hero-layout { text-align: left; padding: 0 1.5rem; }
+
+  .hero-layout {
+    grid-template-columns: 1fr;
+    align-items: center;
+    text-align: left;
+    padding: 0;
+  }
+
   .hero-content { align-items: flex-start; }
-  .hero h1 { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+  .hero h1 { 
+    font-size: clamp(2.5rem, 10vw, 3.5rem); 
+  }
+
+   /* HARD CENTER THE DRAGON ON MOBILE */
+  .hero-visual {
+    width: 100%;
+    justify-self: center;
+    align-self: center;
+    display: grid;
+    place-items: center;
+    margin-top: 1rem;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .hero-visual .dragon-container {
+    width: 100%;
+    display: grid;
+    place-items: center;
+    margin: 0 auto;
+  }
+
+  .hero-visual .dragon-stack {
+    width: var(--dragon-size);
+    max-width: 100%;
+    margin-inline: auto;
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* kill any accidental offsets */
+  .hero-visual .dragon-stack,
+  .hero-visual .dragon-container {
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+
+  .hero-scroll { display: none; }
+  
+  body { font-size: 15px; }
 
   [data-theme="light"] .hero-card {
-    background: linear-gradient(135deg, rgba(14,165,201,0.05), rgba(255,255,255,0.88), rgba(14,165,201,0.03));
+    background: linear-gradient(
+      135deg,
+      rgba(14,165,201,0.05),
+      rgba(255,255,255,0.88),
+      rgba(14,165,201,0.03)
+    );
     border-color: rgba(14,165,201,0.2);
     box-shadow: 0 4px 40px rgba(14,165,201,0.06);
   }
 
   .nav-links {
     display: none;
-    position: absolute; top: calc(70px - 1px);
-    right: 0.75rem; left: auto;
+    position: absolute;
+    top: calc(70px - 1px);
+    right: 0.75rem;
+    left: auto;
     border-top: 0;
-    border-top-left-radius: 0; border-top-right-radius: 0;
-    border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
-    width: 150px; box-sizing: border-box;
-    padding: 10px; gap: 8px; overflow: hidden;
-    grid-template-columns: 1fr auto; grid-auto-rows: min-content; align-items: center;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    width: 150px;
+    box-sizing: border-box;
+    padding: 10px;
+    gap: 8px;
+    overflow: hidden;
+    grid-template-columns: 1fr auto;
+    grid-auto-rows: min-content;
+    align-items: center;
     background: var(--nav-panel-bg);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--nav-panel-border);
     box-shadow: 0 18px 60px rgba(0,0,0,0.55);
     z-index: 2000;
   }
-  .nav-links::before{
-    content: ""; position: absolute; top: -10px; right: 14px;
-    width: 18px; height: 18px;
+
+  .nav-links::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: 14px;
+    width: 18px;
+    height: 18px;
     background: var(--nav-panel-bg);
     border-left: 1px solid var(--nav-panel-border);
     border-top: 1px solid var(--nav-panel-border);
     transform: rotate(45deg);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
-  .nav-links.open { display: grid; animation: navSlideInRight 0.35s var(--ease-spring); }
+
+  .nav-links.open {
+    display: grid;
+    animation: navSlideInRight 0.35s var(--ease-spring);
+  }
+
   .nav-links .nav-link { grid-column: 1 / -1; justify-self: end; text-align: right; }
   .nav-links .nav-cta { grid-column: 1; justify-self: end; margin: 0.3rem 0 0; padding: 0.5rem 1rem; }
   .nav-links .theme-toggle { grid-column: 2; justify-self: end; align-self: center; margin: 0.3rem 0 0; }
@@ -1182,55 +1443,60 @@ canvas.particle-canvas {
   .contact-grid { grid-template-columns: 1fr; }
   .footer { flex-direction: column; gap: 1rem; text-align: center; }
   .hero-scroll { display: none; }
-  body { font-size: 15px; }
 }
 
 @media (max-width: 520px) {
   :root { --dragon-size: min(90vw, 380px); }
 
-  .hero-actions{
-    display: flex; flex-wrap: nowrap; gap: 0.75rem; width: 100%;
-  }
+  .hero-actions { justify-content: center; }
+
   .hero-actions .btn-neon,
-  .hero-actions .btn-ghost{
-    flex: 1 1 0; min-width: 0; justify-content: center;
-    padding: 0.75rem 1rem; font-size: 0.85rem; white-space: nowrap;
-  }
-  .hero-actions .btn-neon span:last-child{ display: none; }
-
-  .project-card.featured{
-    padding: 3.1rem 1.25rem 1.6rem; gap: 1rem;
-  }
-  .project-tag{ top: 0.9rem; left: 0.9rem; }
-  .project-card.featured .project-preview{
-    max-width: 100%; height: 180px;
+  .hero-actions .btn-ghost {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
   }
 
-  .edu-timeline{ width: 100%; }
-  .edu-item{ grid-template-columns: 40px 1fr; gap: 0.75rem; }
-  .edu-rail{ width: 40px; }
-  .edu-card{ padding: 1.65rem 1.25rem; }
-  .edu-dot{ top: 1.65rem; }
+  .hero-actions .btn-neon span:last-child { display: none; }
+
+  .project-card.featured {
+    padding: 3.1rem 1.25rem 1.6rem;
+    gap: 1rem;
+  }
+
+  .project-tag { top: 0.9rem; left: 0.9rem; }
+
+  .project-card.featured .project-preview {
+    max-width: 100%;
+    height: 180px;
+  }
+
+  .edu-timeline { width: 100%; }
+  .edu-item { grid-template-columns: 40px 1fr; gap: 0.75rem; }
+  .edu-rail { width: 40px; }
+  .edu-card { padding: 1.65rem 1.25rem; }
+  .edu-dot { top: 1.65rem; }
 }
-
 /* ── Hero Card Container ── */
 .hero-card {
   background: linear-gradient(135deg, rgba(var(--neon-rgb), 0.04), var(--card-glass), rgba(var(--neon-rgb), 0.02));
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(var(--neon-rgb), 0.15);
   border-radius: 1.5rem;
   padding: clamp(2.25rem, 4vw, 3.5rem) clamp(1.5rem, 3vw, 3rem);
   position: relative; overflow: hidden;
   width: 100%; max-width: min(1300px, calc(100vw - 3rem));
   margin: 0 auto;
-  animation: borderGlow 4s ease infinite;
+  overflow: hidden;
 }
 .hero-card::before {
   content: ''; position: absolute; top: 0; left: -100%;
   width: 60%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.03), transparent);
-  animation: cardShine 6s ease-in-out infinite;
   pointer-events: none;
+  /* Removed continuous cardShine animation — runs on large element */
 }
 .hero-card::after {
   content: ''; position: absolute; top: -1px; left: 10%; right: 10%; height: 2px;
@@ -1238,11 +1504,10 @@ canvas.particle-canvas {
   border-radius: 2px;
 }
 
-/* ── Animated Cards ── */
+/* ── Animated Card Shine (hover only) ── */
 .stat-card,
 .skill-card,
 .project-card,
-.edu-item,
 .contact-card {
   position: relative; overflow: hidden;
 }
@@ -1260,17 +1525,4 @@ canvas.particle-canvas {
 .project-card:hover::after,
 .contact-card:hover::after {
   animation: cardShine 0.8s ease forwards;
-}
-
-/* Education: prevent row-level hover overlay */
-.edu-item{
-  background: transparent; overflow: visible;
-  box-shadow: none !important;
-}
-.edu-item::before,
-.edu-item::after{
-  content: none !important;
-}
-.edu-item:hover{
-  transform: translateX(6px);
 }
