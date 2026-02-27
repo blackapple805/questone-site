@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // ═══════════════════════════════════════════════════════
 //  ERIC — Creative Resume Site v3
 //  Aesthetic: Cyberpunk Dragon / Acid Yellow-Black
 //  Hero: Mech Dragon image with parallax + glow
+//  UPDATE: Layered dragon animation (wing/tail parallax)
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
@@ -93,58 +94,105 @@ const Icons = {
     </svg>
   ),
   ExternalLink: ({ size = 18, color = "currentColor" }) => (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M14 3h7v7" />
-      <path d="M10 14L21 3" />
-      <path d="M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 3h7v7" /><path d="M10 14L21 3" /><path d="M21 14v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
     </svg>
   ),
   Check: ({ size = 18, color = "currentColor" }) => (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M20 6L9 17l-5-5" />
     </svg>
-  ), 
+  ),
 };
 
-// ── Dragon Hero Image with parallax mouse tracking ──
+// ═══════════════════════════════════════════════════════
+//  ANIMATED DRAGON HERO
+//  Fetches SVG, injects inline, assigns animation layers
+//  to individual paths for parallax wing/tail movement
+// ═══════════════════════════════════════════════════════
+
 function DragonHero({ theme }) {
+  const darkRef = useRef(null);
+  const lightRef = useRef(null);
+  const [darkReady, setDarkReady] = useState(false);
+  const [lightReady, setLightReady] = useState(false);
+
+  const injectSVG = useCallback(async (url, containerRef, setReady, pathCount) => {
+    try {
+      const resp = await fetch(url);
+      const text = await resp.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "image/svg+xml");
+      const svg = doc.querySelector("svg");
+      if (!svg || !containerRef.current) return;
+
+      // Normalize: make SVG fill its container
+      svg.removeAttribute("width");
+      svg.removeAttribute("height");
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      svg.style.width = "100%";
+      svg.style.height = "100%";
+      svg.style.display = "block";
+      svg.style.overflow = "visible";
+
+      // Get all paths
+      const paths = svg.querySelectorAll("path");
+      const total = paths.length;
+
+      // Assign animation layer classes based on position in stack
+      // Bottom layers (outlines/shadows) = slow sway
+      // Middle layers = medium breathing
+      // Top layers (detail) = subtle independent movement
+      paths.forEach((p, i) => {
+        const ratio = i / (total - 1); // 0 = bottom, 1 = top
+
+        if (ratio < 0.3) {
+          // Bottom layers — "tail sway" (slow, wider)
+          p.classList.add("dragon-anim-layer", "dragon-layer-tail");
+          p.style.setProperty("--layer-delay", `${i * 0.15}s`);
+          p.style.setProperty("--layer-offset", `${(i % 3) * 0.3}px`);
+        } else if (ratio < 0.65) {
+          // Middle layers — "body breathing"
+          p.classList.add("dragon-anim-layer", "dragon-layer-body");
+          p.style.setProperty("--layer-delay", `${i * 0.1}s`);
+          p.style.setProperty("--layer-offset", `${(i % 3) * 0.2}px`);
+        } else {
+          // Top layers — "wing shift" (subtle lateral)
+          p.classList.add("dragon-anim-layer", "dragon-layer-wing");
+          p.style.setProperty("--layer-delay", `${i * 0.08}s`);
+          p.style.setProperty("--layer-offset", `${(i % 4) * 0.25}px`);
+        }
+      });
+
+      containerRef.current.innerHTML = "";
+      containerRef.current.appendChild(svg);
+      setReady(true);
+    } catch (err) {
+      console.warn("Dragon SVG load failed:", url, err);
+    }
+  }, []);
+
+  useEffect(() => {
+    injectSVG("/dragon.svg", darkRef, setDarkReady, 19);
+  }, [injectSVG]);
+
+  useEffect(() => {
+    injectSVG("/lightdragon.svg", lightRef, setLightReady, 29);
+  }, [injectSVG]);
+
   return (
     <div className="dragon-container" aria-label="Cyberpunk Mech Dragon">
       <div className="dragon-glow" />
       <div className="dragon-stack">
-        <object
-          data="/dragon.svg"
-          type="image/svg+xml"
-          aria-hidden="true"
-          className={`dragon-img dragon-layer ${theme === "dark" ? "is-on" : ""}`}
-          style={{ pointerEvents: "none" }}
+        {/* Dark variant */}
+        <div
+          ref={darkRef}
+          className={`dragon-inline dragon-layer ${theme === "dark" ? "is-on" : ""} ${darkReady ? "ready" : ""}`}
         />
-        <object
-          data="/lightdragon.svg"
-          type="image/svg+xml"
-          aria-hidden="true"
-          className={`dragon-img dragon-layer ${theme === "light" ? "is-on" : ""}`}
-          style={{ pointerEvents: "none" }}
+        {/* Light variant */}
+        <div
+          ref={lightRef}
+          className={`dragon-inline dragon-layer ${theme === "light" ? "is-on" : ""} ${lightReady ? "ready" : ""}`}
         />
       </div>
     </div>
@@ -155,7 +203,6 @@ function DragonHero({ theme }) {
 function ParticleField({ theme }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
-
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -327,34 +374,10 @@ export default function App() {
   ];
 
   const education = [
-    {
-      status: "In Progress",
-      title: "Electrical Apprenticeship Prep",
-      desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry.",
-      Icon: Icons.Bolt,
-      iconColor: "var(--pink)",
-    },
-    {
-      status: "Ongoing",
-      title: "DevOps & Cloud Infrastructure",
-      desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization.",
-      Icon: Icons.Gear,
-      iconColor: "var(--neon)",
-    },
-    {
-      status: "Ongoing",
-      title: "Full-Stack Web Development",
-      desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows.",
-      Icon: Icons.Code,
-      iconColor: "var(--orange)",
-    },
-    {
-      status: "Ongoing",
-      title: "Linux, Security & IoT",
-      desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards.",
-      Icon: Icons.Terminal,
-      iconColor: "var(--purple)",
-    },
+    { status: "In Progress", title: "Electrical Apprenticeship Prep", desc: "Independent study of NEC code, circuit theory, conduit bending, and load calculations using Ugly's Electrical References and Siemens catalogs. Preparing for formal apprenticeship entry.", Icon: Icons.Bolt, iconColor: "var(--pink)" },
+    { status: "Ongoing", title: "DevOps & Cloud Infrastructure", desc: "Hands-on learning through Terraform AWS VPC provisioning, Jenkins CI/CD pipeline configuration, Prometheus monitoring, and Docker containerization.", Icon: Icons.Gear, iconColor: "var(--neon)" },
+    { status: "Ongoing", title: "Full-Stack Web Development", desc: "Building React applications with Supabase backends, deploying sites like NoteStream and QuestOne. Learning auth, subscriptions, AI integration, and modern deployment workflows.", Icon: Icons.Code, iconColor: "var(--orange)" },
+    { status: "Ongoing", title: "Linux, Security & IoT", desc: "Deep-diving into Kali Linux, server hardening, shell scripting, and embedded systems. Building ESP8266 IoT data pipelines and Raspberry Pi security monitoring dashboards.", Icon: Icons.Terminal, iconColor: "var(--purple)" },
   ];
 
   const contactIcons = { Email: Icons.Mail, GitHub: Icons.GitHub, WhatsApp: Icons.Phone, Instagram: Icons.Instagram, LinkedIn: Icons.LinkedIn, Location: Icons.MapPin };
@@ -529,12 +552,12 @@ export default function App() {
               <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}>
                 <div>
                   <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>{proj.tag}</span>
-                 <h3 className="project-title">
-                  <span>{proj.title}</span>
-                  <span className="arrow-icon" aria-hidden="true">
-                    <Icons.ExternalLink size={16} color="currentColor" />
-                  </span>
-                 </h3>
+                  <h3 className="project-title">
+                    <span>{proj.title}</span>
+                    <span className="arrow-icon" aria-hidden="true">
+                      <Icons.ExternalLink size={16} color="currentColor" />
+                    </span>
+                  </h3>
                   <p>{proj.desc}</p>
                   <div className="project-tech">{proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}</div>
                 </div>
@@ -550,32 +573,28 @@ export default function App() {
         <Reveal>
           <p className="section-label">04 — Education</p>
           <h2 className="section-title">Never Stop Learning</h2>
-          <p className="section-desc">
-            A mix of structured study and relentless self-teaching across electrical,
-            security, and development.
-          </p>
+          <p className="section-desc">A mix of structured study and relentless self-teaching across electrical, security, and development.</p>
         </Reveal>
-          <div className="edu-timeline">
-            {education.map((edu, i) => (
-              <Reveal key={edu.title} delay={i * 120}>
-                <div className="edu-item">
-                  <div className="edu-rail" aria-hidden="true">
-                    <div className="edu-dot">
-                      <div className="edu-dot-inner">
-                        {edu.Icon ? <edu.Icon size={14} color={edu.iconColor || "var(--neon)"} /> : null}
-                      </div>
+        <div className="edu-timeline">
+          {education.map((edu, i) => (
+            <Reveal key={edu.title} delay={i * 120}>
+              <div className="edu-item">
+                <div className="edu-rail" aria-hidden="true">
+                  <div className="edu-dot">
+                    <div className="edu-dot-inner">
+                      {edu.Icon ? <edu.Icon size={14} color={edu.iconColor || "var(--neon)"} /> : null}
                     </div>
                   </div>
-
-                  <div className="edu-card">
-                    <div className="edu-meta">{edu.status}</div>
-                    <h3>{edu.title}</h3>
-                    <p>{edu.desc}</p>
-                  </div>
                 </div>
-              </Reveal>
-            ))}
-          </div>
+                <div className="edu-card">
+                  <div className="edu-meta">{edu.status}</div>
+                  <h3>{edu.title}</h3>
+                  <p>{edu.desc}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* CONTACT */}
