@@ -131,26 +131,20 @@ function DragonHero({ theme }) {
   return (
     <div className="dragon-container" aria-label="Cyberpunk Mech Dragon">
       <div className="dragon-glow" />
-
-      {/* stack both images and only fade opacity */}
       <div className="dragon-stack">
-        <img
-          src="/dragon.png"
-          alt=""
+        <object
+          data="/dragon.svg"
+          type="image/svg+xml"
           aria-hidden="true"
           className={`dragon-img dragon-layer ${theme === "dark" ? "is-on" : ""}`}
-          draggable="false"
-          loading="eager"
-          decoding="async"
+          style={{ pointerEvents: "none" }}
         />
-        <img
-          src="/lightdragon.png"
-          alt=""
+        <object
+          data="/lightdragon.svg"
+          type="image/svg+xml"
           aria-hidden="true"
           className={`dragon-img dragon-layer ${theme === "light" ? "is-on" : ""}`}
-          draggable="false"
-          loading="eager"
-          decoding="async"
+          style={{ pointerEvents: "none" }}
         />
       </div>
     </div>
@@ -162,12 +156,6 @@ function ParticleField({ theme }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
-  useEffect(() => {
-    const a = new Image();
-    a.src = "/dragon.png";
-    const b = new Image();
-    b.src = "/lightdragon.png";
-    }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
