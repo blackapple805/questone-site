@@ -1,18 +1,19 @@
 import DragonRig from "./DragonRig";
+import QuestBladeLogo from "./QuestBladeLogo";
 import { useState, useEffect, useRef, useMemo } from "react";
 
 // ═══════════════════════════════════════════════════════
-//  ERIC — Creative Resume Site v3 (OPTIMIZED)
-//  Performance fixes:
-//  - Particle field: spatial grid for O(n) neighbor lookups
-//  - Dragon: reduced animation layers, GPU-composited
-//  - Scroll: RAF-throttled with IntersectionObserver
-//  - Removed excessive will-change & backdrop-filter
+//  ERIC — Creative Resume Site v4
+//  Changes from v3:
+//  - Projects: tiered layout (featured/primary/secondary)
+//  - Projects: left-aligned text, stronger light theme
+//  - About: rewritten copy for recruiter engagement
+//  - About: tighter grid with personality
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
 
-// ── SVG Icon Components (unchanged) ──
+// ── SVG Icon Components ──
 const Icons = {
   Bolt: ({ size = 24, color = "currentColor" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -109,49 +110,30 @@ const Icons = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  DRAGON HERO — PNG images with CSS animations
-//  Both images stacked and crossfaded for seamless
-//  theme transition. Preloads both on mount.
+//  DRAGON HERO
 // ═══════════════════════════════════════════════════════
 
 function DragonHero({ theme }) {
   const [darkLoaded, setDarkLoaded] = useState(false);
   const [lightLoaded, setLightLoaded] = useState(false);
-
   return (
     <div className="dragon-container" aria-label="Cyberpunk Mech Dragon">
       <div className="dragon-glow" />
       <div className="dragon-stack">
-        {/* Both images always mounted, crossfade via opacity */}
-        <img
-          src="/dragon.png"
-          alt="Mech Dragon Dark"
-          className={`dragon-img ${darkLoaded ? "dragon-img-ready" : ""} ${theme === "dark" ? "dragon-img-active" : ""}`}
-          onLoad={() => setDarkLoaded(true)}
-          draggable={false}
-        />
-        <img
-          src="/lightdragon.png"
-          alt="Mech Dragon Light"
-          className={`dragon-img ${lightLoaded ? "dragon-img-ready" : ""} ${theme === "light" ? "dragon-img-active" : ""}`}
-          onLoad={() => setLightLoaded(true)}
-          draggable={false}
-        />
+        <img src="/dragon.png" alt="Mech Dragon Dark" className={`dragon-img ${darkLoaded ? "dragon-img-ready" : ""} ${theme === "dark" ? "dragon-img-active" : ""}`} onLoad={() => setDarkLoaded(true)} draggable={false} />
+        <img src="/lightdragon.png" alt="Mech Dragon Light" className={`dragon-img ${lightLoaded ? "dragon-img-ready" : ""} ${theme === "light" ? "dragon-img-active" : ""}`} onLoad={() => setLightLoaded(true)} draggable={false} />
       </div>
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════
-//  PARTICLE FIELD — Ultra-light
-//  18 particles, 70px connect, skip every other frame
-//  for line drawing, squared distance (no sqrt)
+//  PARTICLE FIELD
 // ═══════════════════════════════════════════════════════
 
 function ParticleField({ theme }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d", { alpha: true });
@@ -164,117 +146,57 @@ function ParticleField({ theme }) {
     const nR = isDark ? 230 : 13;
     const nG = isDark ? 210 : 138;
     const nB = isDark ? 0 : 106;
-
     const dotColor = `rgba(${nR},${nG},${nB},${isDark ? 0.15 : 0.09})`;
-    // Pre-bake 10 line alpha steps to avoid per-line string concat
     const lineColors = Array.from({ length: 10 }, (_, i) => {
       const a = ((10 - i) / 10) * (isDark ? 0.06 : 0.035);
       return `rgba(${nR},${nG},${nB},${a.toFixed(4)})`;
     });
-
     const particles = Array.from({ length: COUNT }, () => ({
       x: Math.random() * w, y: Math.random() * h,
       vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
       r: Math.random() * 1.5 + 0.5,
     }));
-
     let isVisible = true;
     let frame = 0;
-    const onVisibility = () => {
-      isVisible = !document.hidden;
-      if (isVisible) animRef.current = requestAnimationFrame(draw);
-    };
+    const onVisibility = () => { isVisible = !document.hidden; if (isVisible) animRef.current = requestAnimationFrame(draw); };
     document.addEventListener("visibilitychange", onVisibility);
-
     const draw = () => {
       if (!isVisible) return;
       frame++;
-
       ctx.clearRect(0, 0, w, h);
-
-      for (const p of particles) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-      }
-
-      // Dots — every frame (cheap)
+      for (const p of particles) { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = w; if (p.x > w) p.x = 0; if (p.y < 0) p.y = h; if (p.y > h) p.y = 0; }
       ctx.fillStyle = dotColor;
       ctx.beginPath();
-      for (const p of particles) {
-        ctx.moveTo(p.x + p.r, p.y);
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      }
+      for (const p of particles) { ctx.moveTo(p.x + p.r, p.y); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); }
       ctx.fill();
-
-      // Lines — every other frame (18 particles = 153 checks, skip half)
       if (frame % 2 === 0) {
         ctx.lineWidth = 0.5;
-        for (let i = 0; i < COUNT; i++) {
-          const pi = particles[i];
-          for (let j = i + 1; j < COUNT; j++) {
-            const dx = pi.x - particles[j].x;
-            const dy = pi.y - particles[j].y;
-            const dSq = dx * dx + dy * dy;
-            if (dSq < CONNECT_SQ) {
-              // Map squared distance to 0-9 bucket (no sqrt)
-              const bucket = Math.min(9, (dSq / CONNECT_SQ * 10) | 0);
-              ctx.strokeStyle = lineColors[bucket];
-              ctx.beginPath();
-              ctx.moveTo(pi.x, pi.y);
-              ctx.lineTo(particles[j].x, particles[j].y);
-              ctx.stroke();
-            }
-          }
-        }
+        for (let i = 0; i < COUNT; i++) { const pi = particles[i]; for (let j = i + 1; j < COUNT; j++) { const dx = pi.x - particles[j].x; const dy = pi.y - particles[j].y; const dSq = dx * dx + dy * dy; if (dSq < CONNECT_SQ) { const bucket = Math.min(9, (dSq / CONNECT_SQ * 10) | 0); ctx.strokeStyle = lineColors[bucket]; ctx.beginPath(); ctx.moveTo(pi.x, pi.y); ctx.lineTo(particles[j].x, particles[j].y); ctx.stroke(); } } }
       }
-
       animRef.current = requestAnimationFrame(draw);
     };
-
     let resizeTimer;
-    const onResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-      }, 200);
-    };
+    const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }, 200); };
     window.addEventListener("resize", onResize);
     draw();
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("visibilitychange", onVisibility);
-      clearTimeout(resizeTimer);
-    };
+    return () => { cancelAnimationFrame(animRef.current); window.removeEventListener("resize", onResize); document.removeEventListener("visibilitychange", onVisibility); clearTimeout(resizeTimer); };
   }, [theme]);
-
   return <canvas ref={canvasRef} className="particle-canvas" />;
 }
 
-// ── Typewriter (unchanged) ──
+// ── Helpers ──
 function Typewriter({ text, speed = 50, delay = 0 }) {
   const [displayed, setDisplayed] = useState("");
   const [started, setStarted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setStarted(true), delay); return () => clearTimeout(t); }, [delay]);
-  useEffect(() => {
-    if (!started || displayed.length >= text.length) return;
-    const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), speed);
-    return () => clearTimeout(t);
-  }, [displayed, started, text, speed]);
+  useEffect(() => { if (!started || displayed.length >= text.length) return; const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), speed); return () => clearTimeout(t); }, [displayed, started, text, speed]);
   return <span>{displayed}{displayed.length < text.length && started && <span className="cursor-blink">▌</span>}</span>;
 }
 
-// ── Scroll Reveal (unchanged) ──
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold, rootMargin: "0px 0px -60px 0px" });
-    obs.observe(el); return () => obs.disconnect();
-  }, [threshold]);
+  useEffect(() => { const el = ref.current; if (!el) return; const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold, rootMargin: "0px 0px -60px 0px" }); obs.observe(el); return () => obs.disconnect(); }, [threshold]);
   return [ref, visible];
 }
 
@@ -288,20 +210,13 @@ function Reveal({ children, delay = 0, direction = "up" }) {
   );
 }
 
-// ── Counter (unchanged) ──
 function Counter({ target, suffix = "", duration = 2000 }) {
   const [count, setCount] = useState(0);
   const [ref, visible] = useScrollReveal();
-  useEffect(() => {
-    if (!visible) return;
-    let start = 0; const step = target / (duration / 16);
-    const iv = setInterval(() => { start += step; if (start >= target) { setCount(target); clearInterval(iv); } else setCount(Math.floor(start)); }, 16);
-    return () => clearInterval(iv);
-  }, [visible, target, duration]);
+  useEffect(() => { if (!visible) return; let start = 0; const step = target / (duration / 16); const iv = setInterval(() => { start += step; if (start >= target) { setCount(target); clearInterval(iv); } else setCount(Math.floor(start)); }, 16); return () => clearInterval(iv); }, [visible, target, duration]);
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// ── Skill Bar (unchanged) ──
 function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
   const [ref, visible] = useScrollReveal();
   return (
@@ -318,7 +233,7 @@ function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MAIN APP (with optimized scroll handling)
+//  MAIN APP
 // ═══════════════════════════════════════════════════════
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -332,7 +247,6 @@ export default function App() {
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 300); return () => clearTimeout(t); }, []);
   useEffect(() => { const t = setTimeout(() => setHeroReady(true), 800); return () => clearTimeout(t); }, []);
 
-  // ── OPTIMIZED SCROLL: RAF-throttled ──
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
@@ -340,10 +254,7 @@ export default function App() {
       ticking = true;
       requestAnimationFrame(() => {
         setScrollY(window.scrollY);
-        const sections = SECTIONS.map((id) => {
-          const el = document.getElementById(id);
-          return { id, top: el ? el.getBoundingClientRect().top : 0 };
-        });
+        const sections = SECTIONS.map((id) => { const el = document.getElementById(id); return { id, top: el ? el.getBoundingClientRect().top : 0 }; });
         const current = sections.reduce((prev, curr) => Math.abs(curr.top - 100) < Math.abs(prev.top - 100) ? curr : prev);
         setActiveSection(current.id);
         ticking = false;
@@ -356,7 +267,6 @@ export default function App() {
   const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); };
   const toggleTheme = () => setTheme(p => p === "dark" ? "light" : "dark");
 
-  // ── Memoize static data ──
   const skillCategories = useMemo(() => [
     { title: "DevOps & CI/CD", Icon: Icons.Gear, color: "var(--neon)", items: ["Jenkins", "GitHub Actions", "CI/CD Pipelines", "Automation", "Prometheus", "Monitoring"] },
     { title: "Cloud & IaC", Icon: Icons.Network, color: "var(--blue)", items: ["Terraform", "AWS VPC", "Infrastructure as Code", "Cloud Deployments", "Docker", "Scalable Systems"] },
@@ -366,15 +276,30 @@ export default function App() {
     { title: "Electrical & IoT", Icon: Icons.Bolt, color: "var(--pink)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "ESP8266", "IoT Sensors", "Panel Layout"] },
   ], []);
 
-  const projects = useMemo(() => [
-    { title: "NoteStream", tag: "FEATURED", tagColor: "var(--neon)", desc: "Full-featured React note-taking app with AI-powered features, subscription tiers, custom training, and a responsive dashboard. Supabase backend with RLS policies and edge functions.", tech: ["React", "Supabase", "AI", "Edge Functions"], featured: true, href: "https://github.com/blackapple805/notestream-site" },
-    { title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)", desc: "Personal portfolio and cloud landing page at questone.cloud. Built to showcase DevOps projects, infrastructure work, and professional presence.", tech: ["React", "JavaScript", "CSS", "Deployment"], href: "https://github.com/blackapple805/questone-site" },
-    { title: "IoT Log", tag: "IOT", tagColor: "var(--pink)", desc: "ESP8266-based IoT data pipeline that uploads JSON sensor data directly to GitHub. Hardware meets version control for lightweight cloud logging.", tech: ["ESP8266", "JavaScript", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log" },
-    { title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)", desc: "Forked and customized Terraform module for provisioning AWS VPC resources. Infrastructure as code for scalable, repeatable cloud networking.", tech: ["Terraform", "AWS", "HCL", "IaC"], href: "https://github.com/blackapple805/terraform-aws-vpc" },
-    { title: "Prometheus", tag: "MONITORING", tagColor: "var(--neon)", desc: "Working with the Prometheus monitoring and alerting toolkit. Metrics collection, dashboards, and infrastructure observability at scale.", tech: ["Prometheus", "Monitoring", "Metrics", "Alerting"], href: "https://github.com/blackapple805/prometheus" },
-    { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Forked Jenkins automation server — exploring pipeline configuration, plugin development, and continuous integration/deployment workflows.", tech: ["Jenkins", "Java", "CI/CD", "Automation"], href: "https://github.com/blackapple805/jenkins" },
-    { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Jenkins JUnit plugin for test result reporting. Understanding plugin architecture and integrating automated testing into CI pipelines.", tech: ["Java", "Jenkins", "JUnit", "Plugins"], href: "https://github.com/blackapple805/junit-plugin" },
-    { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "A collection of projects and prototypes in Python — showcasing scripting, automation, and problem-solving across different domains.", tech: ["Python", "Scripting", "Automation"], href: "https://github.com/blackapple805/Projects" },
+  // ═══════════════════════════════════════════════════════
+  //  PROJECTS — Tiered: 1 featured + 3 primary + 4 compact
+  // ═══════════════════════════════════════════════════════
+
+  const featuredProject = useMemo(() => ({
+    title: "NoteStream",
+    tag: "FEATURED",
+    tagColor: "var(--neon)",
+    desc: "A full-stack note-taking app with AI-powered features, tiered subscriptions, and a responsive dashboard. Built with React on the frontend and Supabase on the back — complete with row-level security, edge functions, and real-time sync.",
+    tech: ["React", "Supabase", "AI", "Edge Functions", "RLS"],
+    href: "https://github.com/blackapple805/notestream-site",
+  }), []);
+
+  const primaryProjects = useMemo(() => [
+    { title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)", desc: "Portfolio and cloud landing page showcasing DevOps projects and professional presence. Deployed on Vercel.", tech: ["React", "JavaScript", "CSS"], href: "https://github.com/blackapple805/questone-site" },
+    { title: "IoT Log", tag: "IOT", tagColor: "var(--pink)", desc: "ESP8266 data pipeline that pushes JSON sensor readings directly to GitHub. Hardware meets version control.", tech: ["ESP8266", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log" },
+    { title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)", desc: "Customized Terraform module for provisioning AWS VPC resources. Repeatable, scalable infrastructure as code.", tech: ["Terraform", "AWS", "HCL"], href: "https://github.com/blackapple805/terraform-aws-vpc" },
+  ], []);
+
+  const secondaryProjects = useMemo(() => [
+    { title: "Prometheus", tag: "MONITORING", tagColor: "var(--neon)", desc: "Metrics collection and infrastructure observability at scale.", tech: ["Prometheus", "Metrics"], href: "https://github.com/blackapple805/prometheus" },
+    { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Pipeline configuration and continuous integration workflows.", tech: ["Jenkins", "Java"], href: "https://github.com/blackapple805/jenkins" },
+    { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Plugin architecture and automated test result reporting.", tech: ["Java", "JUnit"], href: "https://github.com/blackapple805/junit-plugin" },
+    { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "Python scripts, automation tools, and prototypes.", tech: ["Python", "Automation"], href: "https://github.com/blackapple805/Projects" },
   ], []);
 
   const education = useMemo(() => [
@@ -385,7 +310,6 @@ export default function App() {
   ], []);
 
   const contactIcons = { Email: Icons.Mail, GitHub: Icons.GitHub, WhatsApp: Icons.Phone, Instagram: Icons.Instagram, LinkedIn: Icons.LinkedIn, Location: Icons.MapPin };
-
   const contacts = useMemo(() => [
     { iconKey: "Email", label: "Email", value: "eric.dangel.dev@gmail.com", href: "mailto:eric.dangel.dev@gmail.com" },
     { iconKey: "GitHub", label: "GitHub", value: "github.com/blackapple805", href: "https://github.com/blackapple805" },
@@ -405,34 +329,46 @@ export default function App() {
         <div className="loader-bar"><div className="loader-fill" /></div>
       </div>
 
-      {/* OVERLAYS — reduced: removed noise SVG filter, simplified scanline */}
       <div className="noise" />
       <div className="scanline-overlay" />
       <ParticleField theme={theme} />
 
       {/* NAV */}
       <nav className={`nav ${scrollY > 50 ? "scrolled" : ""}`}>
-        <div className="nav-logo" onClick={() => scrollTo("home")}>
-          <span className="logo-mark">E<span className="logo-dot">.</span></span>
-        </div>
-        <button className={`mobile-toggle ${mobileNav ? "open" : ""}`} onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle menu">
-          <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-            <line className="ham-line ham-top" x1="1" y1="2" x2="21" y2="2" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
-            <line className="ham-line ham-mid" x1="1" y1="9" x2="21" y2="9" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
-            <line className="ham-line ham-bot" x1="1" y1="16" x2="21" y2="16" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-        <div className={`nav-links ${mobileNav ? "open" : ""}`}>
-          {SECTIONS.filter(s => s !== "home").map(s => (
-            <button key={s} className={`nav-link ${activeSection === s ? "active" : ""}`} onClick={() => scrollTo(s)}>{s}</button>
-          ))}
-          <button className="nav-cta" onClick={() => scrollTo("contact")}>Let's Talk</button>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === "dark" ? <Icons.Sun size={18} /> : <Icons.Moon size={18} />}
+        <div className="nav-inner">
+          <div className="nav-logo" onClick={() => scrollTo("home")}>
+            <QuestBladeLogo size={34} theme={theme} />
+          </div>
+
+          <button
+            className={`mobile-toggle ${mobileNav ? "open" : ""}`}
+            onClick={() => setMobileNav(!mobileNav)}
+            aria-label="Toggle menu"
+          >
+            <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+              <line className="ham-line ham-top" x1="1" y1="2" x2="21" y2="2" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+              <line className="ham-line ham-mid" x1="1" y1="9" x2="21" y2="9" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+              <line className="ham-line ham-bot" x1="1" y1="16" x2="21" y2="16" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
           </button>
+
+          <div className={`nav-links ${mobileNav ? "open" : ""}`}>
+            {SECTIONS.filter((s) => s !== "home").map((s) => (
+              <button
+                key={s}
+                className={`nav-link ${activeSection === s ? "active" : ""}`}
+                onClick={() => scrollTo(s)}
+              >
+                {s}
+              </button>
+            ))}
+            <button className="nav-cta" onClick={() => scrollTo("contact")}>Let's Talk</button>
+            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === "dark" ? <Icons.Sun size={18} /> : <Icons.Moon size={18} />}
+            </button>
+          </div>
         </div>
       </nav>
-
       {/* HERO */}
       <section className="hero" id="home">
         <div className="hero-card">
@@ -444,80 +380,68 @@ export default function App() {
                   <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
                 </div>
               </div>
-
               <h1 style={heroAnim(0.2)}>
                 <span className="hero-line1">CIRCUITS,</span>
                 <span className="hero-line2">CODE &</span>
-                <span className="hero-line3">
-                  CRAFT<span className="accent">.</span>
-                </span>
+                <span className="hero-line3">CRAFT<span className="accent">.</span></span>
               </h1>
-
               <p className="hero-sub" style={heroAnim(0.4)}>
                 Aspiring electrician and DevOps engineer blending hands-on trade skills
                 with cloud infrastructure, CI/CD automation, and a love for building
                 things that work.
               </p>
-
               <div className="hero-tags" style={heroAnim(0.5)}>
-                {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(
-                  (t) => (
-                    <span key={t} className="hero-tag">
-                      {t}
-                    </span>
-                  )
-                )}
+                {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(t => (
+                  <span key={t} className="hero-tag">{t}</span>
+                ))}
               </div>
-
               <div className="hero-actions" style={heroAnim(0.6)}>
-                <a
-                  href="#projects"
-                  className="btn-neon"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollTo("projects");
-                  }}
-                >
-                  <span>View My Work</span>
-                  <span>→</span>
+                <a href="#projects" className="btn-neon" onClick={(e) => { e.preventDefault(); scrollTo("projects"); }}>
+                  <span>View My Work</span><span>→</span>
                 </a>
-
-                <a
-                  href="#contact"
-                  className="btn-ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollTo("contact");
-                  }}
-                >
+                <a href="#contact" className="btn-ghost" onClick={(e) => { e.preventDefault(); scrollTo("contact"); }}>
                   <span>Get in Touch</span>
                 </a>
               </div>
             </div>
-
-            {/* ✅ VISUAL: remove nested wrappers that fight centering.
-                DragonRig already renders .dragon-container/.dragon-glow/.dragon-stack internally. */}
             <div className="hero-visual" style={heroAnim(0.3)}>
               <DragonRig theme={theme} />
             </div>
           </div>
         </div>
-
         <div className="hero-scroll">
           <span>Scroll</span>
           <div className="scroll-line" />
         </div>
       </section>
 
-      {/* ABOUT */}
+      {/* ═══════════════════════════════════════════════
+          ABOUT — Rewritten for engagement
+          ═══════════════════════════════════════════════ */}
       <section className="section" id="about">
         <Reveal><p className="section-label">01 — About</p><h2 className="section-title">Who I Am</h2></Reveal>
         <div className="about-grid">
           <Reveal delay={100}>
             <div className="about-text">
-              <p>I'm <strong>Eric</strong> — a DevOps and IT Infrastructure Engineer with a drive to understand how things work at every level. I'm focused on <strong>automation, monitoring, and secure cloud deployments</strong>, building efficient CI/CD pipelines and scalable systems. I'm also preparing for an <strong>electrical apprenticeship</strong>, studying NEC code, circuit theory, and conduit bending.</p>
-              <p>My work spans <strong>infrastructure as code</strong> with Terraform, container orchestration, Jenkins automation, and Prometheus monitoring. I build <strong>web applications</strong> from scratch with React and Supabase, and I'm deep into <strong>IoT</strong> — shipping ESP8266 sensor data directly to GitHub.</p>
-              <p>Outside of work, I'm building a <strong>custom bobber motorcycle</strong> from a Suzuki Intruder and playing guitar. I believe the best way to learn anything is to get your hands dirty and figure it out.</p>
+              <p>
+                I'm <strong>Eric</strong> — and I don't just write code, I build systems. The kind that stay up at 3 AM when
+                nobody's watching. I got into tech because I wanted to understand how everything connects: the server, the
+                pipeline, the network, the wire in the wall. That curiosity hasn't slowed down.
+              </p>
+              <p>
+                Right now I'm focused on <strong>DevOps and cloud infrastructure</strong> — spinning up AWS environments with
+                Terraform, wiring CI/CD pipelines through Jenkins and GitHub Actions, and monitoring it all with Prometheus.
+                I also build <strong>full-stack web apps</strong> in React with Supabase backends, and I've shipped an{" "}
+                <strong>IoT data pipeline</strong> that pushes ESP8266 sensor readings straight to GitHub. If there's a system
+                involved, I want to understand every layer of it.
+              </p>
+              <p>
+                On a parallel track, I'm preparing for an <strong>electrical apprenticeship</strong> — studying NEC code,
+                circuit theory, and conduit bending. People think software and electrical are different worlds. They're not.
+                Both are about making reliable systems under real constraints. I'm building a{" "}
+                <strong>custom bobber motorcycle</strong> from a '88 Suzuki Intruder for the same reason — because the best
+                way to learn anything is to take it apart and put it back together.
+              </p>
             </div>
           </Reveal>
           <Reveal delay={300}>
@@ -526,7 +450,7 @@ export default function App() {
                 { number: <Counter target={10} />, label: "Repositories" },
                 { number: <Counter target={6} />, label: "Skill Domains" },
                 { number: "∞", label: "Curiosity", style: { fontSize: "1.75rem" } },
-                { number: "24/7", label: "Always Learning", style: { fontSize: "1.5rem" } },
+                { number: "24/7", label: "Always Building", style: { fontSize: "1.5rem" } },
               ].map((s, i) => (
                 <div key={i} className="stat-card">
                   <div className="stat-number" style={s.style}>{s.number}</div>
@@ -575,29 +499,105 @@ export default function App() {
         </Reveal>
       </section>
 
-      {/* PROJECTS */}
-      <section className="section is-centered" id="projects">
+      {/* ═══════════════════════════════════════════════
+          PROJECTS — Tiered layout
+          ═══════════════════════════════════════════════ */}
+      <section className="section" id="projects">
         <Reveal>
           <p className="section-label">03 — Projects</p>
           <h2 className="section-title">Things I've Built</h2>
           <p className="section-desc">Real projects solving real problems — from cloud infrastructure and CI/CD pipelines to full-stack apps and IoT data systems.</p>
         </Reveal>
-        <div className="projects-grid">
-          {projects.map((proj, i) => (
-            <Reveal key={proj.title} delay={i * 80}>
-              <a href={proj.href} target="_blank" rel="noopener noreferrer" className={`project-card ${proj.featured ? "featured" : ""}`}>
+
+        {/* FEATURED — full-width hero card */}
+        <Reveal>
+          <a href={featuredProject.href} target="_blank" rel="noopener noreferrer"
+            className="project-card featured"
+            style={{ textAlign: "left" }}
+          >
+            <div>
+              <span className="project-tag" style={{ color: featuredProject.tagColor }}>{featuredProject.tag}</span>
+              <h3 className="project-title">
+                <span>{featuredProject.title}</span>
+                <span className="arrow-icon"><Icons.ExternalLink size={16} color="currentColor" /></span>
+              </h3>
+              <p style={{ textAlign: "left", margin: 0 }}>{featuredProject.desc}</p>
+              <div className="project-tech" style={{ justifyContent: "flex-start" }}>
+                {featuredProject.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
+              </div>
+            </div>
+            <div className="project-preview">
+              <span className="project-preview-text">&lt;NoteStream /&gt;</span>
+            </div>
+          </a>
+        </Reveal>
+
+        {/* PRIMARY — 3 medium cards */}
+        <div className="projects-grid" style={{ marginTop: "1.25rem" }}>
+          {primaryProjects.map((proj, i) => (
+            <Reveal key={proj.title} delay={i * 100}>
+              <a href={proj.href} target="_blank" rel="noopener noreferrer" className="project-card" style={{ textAlign: "left" }}>
                 <div>
-                  <span className="project-tag" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: proj.tagColor }}>{proj.tag}</span>
+                  <span className="project-tag" style={{ color: proj.tagColor }}>{proj.tag}</span>
                   <h3 className="project-title">
                     <span>{proj.title}</span>
-                    <span className="arrow-icon" aria-hidden="true">
-                      <Icons.ExternalLink size={16} color="currentColor" />
-                    </span>
+                    <span className="arrow-icon"><Icons.ExternalLink size={16} color="currentColor" /></span>
                   </h3>
-                  <p>{proj.desc}</p>
-                  <div className="project-tech">{proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}</div>
+                  <p style={{ textAlign: "left", margin: 0 }}>{proj.desc}</p>
+                  <div className="project-tech" style={{ justifyContent: "flex-start" }}>
+                    {proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
+                  </div>
                 </div>
-                {proj.featured && <div className="project-preview"><span className="project-preview-text">&lt;NoteStream /&gt;</span></div>}
+              </a>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* SECONDARY — 4 compact cards in a row */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "1rem",
+          marginTop: "1.25rem",
+        }}>
+          {secondaryProjects.map((proj, i) => (
+            <Reveal key={proj.title} delay={i * 80}>
+              <a href={proj.href} target="_blank" rel="noopener noreferrer"
+                className="project-card"
+                style={{
+                  textAlign: "left",
+                  padding: "1.5rem 1.25rem",
+                  paddingTop: "2.8rem",
+                }}
+              >
+                <div>
+                  <span className="project-tag" style={{
+                    color: proj.tagColor,
+                    fontSize: "0.52rem",
+                    padding: "0.25rem 0.6rem",
+                    top: "0.85rem",
+                    left: "0.85rem",
+                  }}>{proj.tag}</span>
+                  <h3 className="project-title" style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>
+                    <span>{proj.title}</span>
+                    <span className="arrow-icon"><Icons.ExternalLink size={14} color="currentColor" /></span>
+                  </h3>
+                  <p style={{
+                    textAlign: "left",
+                    margin: 0,
+                    fontSize: "0.85rem",
+                    lineHeight: "1.6",
+                  }}>{proj.desc}</p>
+                  <div className="project-tech" style={{
+                    justifyContent: "flex-start",
+                    marginTop: "0.85rem",
+                    gap: "0.35rem",
+                  }}>
+                    {proj.tech.map(t => (
+                      <span key={t} className="skill-tag" style={{ fontSize: "0.55rem", padding: "0.25rem 0.5rem" }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
               </a>
             </Reveal>
           ))}

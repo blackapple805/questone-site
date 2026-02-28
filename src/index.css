@@ -12,6 +12,11 @@ html, body {
 
 :root { color-scheme: dark light; }
 
+:root{
+  --nav-max: 1200px;  
+  --nav-pad: 2rem;    
+}
+
 :root {
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Space Grotesk', sans-serif;
@@ -505,7 +510,8 @@ canvas.particle-canvas {
 
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-  padding: 0 2rem; height: 70px;
+  padding: 0;
+  height: 70px;
   display: flex; align-items: center; justify-content: space-between;
   background: var(--nav-bg);
   border-bottom: 1px solid transparent;
@@ -513,7 +519,21 @@ canvas.particle-canvas {
 }
 .nav.scrolled { border-bottom-color: var(--border); }
 
+/* Align nav content edges with the hero-card outer edge */
+.nav-inner{
+  height: 70px;
+  width: min(1300px, calc(100vw - 3rem)); /* matches .hero-card max-width */
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0; /* removes extra inset so logo + sun align with card border */
+}
+
 .nav-logo {
+  color: var(--neon);
   cursor: pointer; user-select: none;
   display: flex; align-items: center;
   padding: 4px 8px; border-radius: 8px;
@@ -764,6 +784,9 @@ canvas.particle-canvas {
     padding: 0.38rem 0.8rem;
   }
 }
+
+
+
 /* ═══════════════════════════════════════════════════════
    BUTTONS
    ═══════════════════════════════════════════════════════ */
@@ -853,7 +876,10 @@ canvas.particle-canvas {
   /* backdrop-filter REMOVED — was causing recomposite on scroll */
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 1.6rem; text-align: center;
-  transition: all 0.3s var(--ease-out);
+  transition:
+    transform 420ms var(--ease-out),
+    box-shadow 420ms var(--ease-out),
+    border-color 420ms var(--ease-out);
   position: relative; overflow: hidden;
 }
 .stat-card::before {
@@ -863,7 +889,6 @@ canvas.particle-canvas {
 }
 .stat-card:hover {
   border-color: rgba(var(--neon-rgb), 0.28);
-  transform: translateY(-4px);
   box-shadow: var(--card-shadow-hover);
 }
 .stat-card:hover::before { opacity: 1; }
@@ -893,7 +918,10 @@ canvas.particle-canvas {
   background: var(--card-glass);
   border: 1px solid var(--card-glass-border);
   border-radius: 14px; padding: 2rem 1.75rem;
-  transition: all 0.35s var(--ease-out);
+  transition:
+    transform 420ms var(--ease-out),
+    box-shadow 420ms var(--ease-out),
+    border-color 420ms var(--ease-out);
   position: relative; overflow: hidden;
   text-align: center;
   display: flex; flex-direction: column; align-items: center;
@@ -904,7 +932,6 @@ canvas.particle-canvas {
   opacity: 0; transition: opacity 0.3s;
 }
 .skill-card:hover{
-  transform: translateY(-6px);
   box-shadow: var(--card-shadow-hover);
   border-color: rgba(var(--neon-rgb), 0.2);
 }
@@ -987,7 +1014,6 @@ canvas.particle-canvas {
 }
 
 .project-card:hover{
-  transform: translateY(-6px);
   border-color: rgba(var(--neon-rgb), 0.18);
   box-shadow: var(--card-shadow-hover);
 }
@@ -1187,9 +1213,12 @@ canvas.particle-canvas {
   border: 1px solid var(--card-glass-border); border-radius: 14px;
   padding: 2rem; display: flex; align-items: center; gap: 1.25rem;
   text-decoration: none; color: inherit;
-  transition: all 0.35s var(--ease-out);
+  transition:
+    transform 420ms var(--ease-out),
+    box-shadow 420ms var(--ease-out),
+    border-color 420ms var(--ease-out);
 }
-.contact-card:hover { transform: translateY(-4px); border-color: rgba(var(--neon-rgb), 0.3); box-shadow: var(--card-shadow-hover); }
+.contact-card:hover { border-color: rgba(var(--neon-rgb), 0.3); box-shadow: var(--card-shadow-hover); }
 
 .contact-icon {
   width: 52px; height: 52px; min-width: 52px; border-radius: 14px;
@@ -1525,4 +1554,378 @@ canvas.particle-canvas {
 .project-card:hover::after,
 .contact-card:hover::after {
   animation: cardShine 0.8s ease forwards;
+}
+
+/* Primary projects: 3-column grid (overrides the 2-col default) */
+.projects-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Featured card: left-aligned with better proportions */
+.project-card.featured {
+  text-align: left;
+}
+.project-card.featured p {
+  text-align: left;
+  margin: 0;
+  max-width: none;
+}
+.project-card.featured .project-tech {
+  justify-content: flex-start;
+}
+.project-card.featured .project-title {
+  justify-content: flex-start;
+}
+
+/* All project cards: left-aligned text reads better */
+.project-card p {
+  text-align: left;
+}
+
+/* ── Light theme card fixes ── */
+html[data-theme="light"] .project-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+html[data-theme="light"] .project-card:hover {
+  border-color: rgba(var(--neon-rgb), 0.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .project-card::before {
+  background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.45), transparent);
+}
+
+/* Stronger tag colors in light theme */
+html[data-theme="light"] .project-tag {
+  background: rgba(var(--neon-rgb), 0.12);
+  border-color: rgba(var(--neon-rgb), 0.25);
+  font-weight: 700;
+}
+html[data-theme="light"] .skill-tag {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text);
+}
+
+/* Preview box — more visual depth */
+.project-preview {
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border-color: var(--border);
+}
+
+/* ── Responsive: secondary grid collapses ── */
+@media (max-width: 900px) {
+  .projects-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Secondary 4-col → 2-col on tablet */
+  .section > div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   HERO SPACING FIX + FROZEN CARD AESTHETIC
+   Append to END of index.css
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Fix hero dead space ──
+   The hero had min-height:100vh + excessive padding
+   pushing the card down. Reduce top padding and let
+   the card breathe naturally within the viewport. */
+
+.hero {
+  padding-top: 5rem;      /* was 5rem, nav is 70px so this is fine */
+  padding-bottom: 2rem;
+  min-height: 100vh;
+  min-height: 100dvh;     /* dynamic viewport for mobile */
+}
+
+/* Tighter hero card padding on desktop */
+.hero-card {
+  padding: clamp(2rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 3rem);
+}
+
+/* Hero layout: reduce gap so content + dragon use more width */
+.hero-layout {
+  gap: 2rem;
+  align-items: center;
+}
+
+/* Let the dragon fill more vertical space */
+.hero-visual {
+  min-height: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   FROZEN / ICE CARD AESTHETIC — Light Theme Only
+   
+   Design language:
+   - Cards have a frosted glass look with ice-blue tint
+   - Subtle frost gradient at the top edge
+   - Borders glow faint blue on hover
+   - Stat cards and skill cards get a cold shimmer
+   - Tags look like frozen chips
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Frost base for all cards ── */
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .skill-card,
+html[data-theme="light"] .project-card,
+html[data-theme="light"] .contact-card,
+html[data-theme="light"] .edu-card,
+html[data-theme="light"] .proficiency {
+  background:
+    linear-gradient(
+      165deg,
+      rgba(220, 245, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.85) 30%,
+      rgba(240, 250, 255, 0.7) 70%,
+      rgba(220, 240, 252, 0.5) 100%
+    );
+  border-color: rgba(14, 165, 201, 0.15);
+  box-shadow:
+    0 2px 16px rgba(14, 165, 201, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Frost top-edge highlight — like ice forming at the top */
+html[data-theme="light"] .stat-card::before,
+html[data-theme="light"] .skill-card::after,
+html[data-theme="light"] .project-card::before {
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    rgba(14, 165, 201, 0.25) 30%,
+    rgba(180, 230, 255, 0.4) 50%,
+    rgba(14, 165, 201, 0.25) 70%,
+    transparent 95%
+  );
+}
+
+/* Hover: ice glow intensifies */
+html[data-theme="light"] .stat-card:hover,
+html[data-theme="light"] .skill-card:hover,
+html[data-theme="light"] .project-card:hover,
+html[data-theme="light"] .contact-card:hover,
+html[data-theme="light"] .edu-card:hover {
+  border-color: rgba(14, 165, 201, 0.3);
+  box-shadow:
+    0 8px 32px rgba(14, 165, 201, 0.1),
+    0 2px 8px rgba(14, 165, 201, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ── Frozen tags ── */
+html[data-theme="light"] .skill-tag,
+html[data-theme="light"] .hero-tag {
+  background: rgba(14, 165, 201, 0.07);
+  border-color: rgba(14, 165, 201, 0.18);
+  color: #1a6b80;
+}
+html[data-theme="light"] .skill-card:hover .skill-tag {
+  background: rgba(14, 165, 201, 0.12);
+  border-color: rgba(14, 165, 201, 0.3);
+  color: #0e7490;
+}
+html[data-theme="light"] .hero-tag:hover {
+  background: rgba(14, 165, 201, 0.14);
+  border-color: rgba(14, 165, 201, 0.4);
+  color: #0e7490;
+}
+
+/* ── Project tags — colored frost variants ── */
+html[data-theme="light"] .project-tag {
+  background: rgba(14, 165, 201, 0.08);
+  border-color: rgba(14, 165, 201, 0.2);
+  font-weight: 700;
+}
+
+/* ── Hero card — icy glass ── */
+html[data-theme="light"] .hero-card {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(220, 245, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.88) 25%,
+      rgba(245, 252, 255, 0.75) 50%,
+      rgba(230, 248, 255, 0.6) 75%,
+      rgba(215, 240, 250, 0.45) 100%
+    );
+  border-color: rgba(14, 165, 201, 0.18);
+  box-shadow:
+    0 4px 40px rgba(14, 165, 201, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+html[data-theme="light"] .hero-card::after {
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    rgba(14, 165, 201, 0.3) 30%,
+    rgba(180, 235, 255, 0.5) 50%,
+    rgba(14, 165, 201, 0.3) 70%,
+    transparent 95%
+  );
+}
+
+/* ── Stat numbers — icy color ── */
+html[data-theme="light"] .stat-number {
+  color: #0891b2;
+}
+
+/* ── Education dots — frosty ── */
+html[data-theme="light"] .edu-dot {
+  background: rgba(14, 165, 201, 0.08);
+  border-color: rgba(14, 165, 201, 0.25);
+  box-shadow: 0 0 0 6px rgba(14, 165, 201, 0.04);
+}
+html[data-theme="light"] .edu-dot-inner {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(14, 165, 201, 0.2);
+}
+html[data-theme="light"] .edu-rail::before {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(14, 165, 201, 0.35),
+    transparent
+  );
+}
+
+/* ── Contact icon boxes ── */
+html[data-theme="light"] .contact-icon {
+  background: rgba(14, 165, 201, 0.08);
+  border-color: rgba(14, 165, 201, 0.18);
+}
+html[data-theme="light"] .contact-card:hover .contact-icon {
+  background: rgba(14, 165, 201, 0.15);
+  box-shadow: 0 0 16px rgba(14, 165, 201, 0.12);
+}
+
+/* ── Preview box — frosted ── */
+html[data-theme="light"] .project-preview {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(230, 248, 255, 0.8),
+      rgba(245, 252, 255, 0.9),
+      rgba(220, 242, 252, 0.7)
+    );
+  border-color: rgba(14, 165, 201, 0.12);
+}
+
+/* ── Proficiency bar track — icy ── */
+html[data-theme="light"] .proficiency {
+  background:
+    linear-gradient(
+      165deg,
+      rgba(225, 248, 255, 0.5),
+      rgba(255, 255, 255, 0.85),
+      rgba(235, 250, 255, 0.6)
+    );
+}
+
+/* ── Navigation — frosted glass ── */
+html[data-theme="light"] .nav {
+  background: rgba(248, 253, 255, 0.95);
+}
+html[data-theme="light"] .nav.scrolled {
+  border-bottom-color: rgba(14, 165, 201, 0.12);
+  box-shadow: 0 1px 12px rgba(14, 165, 201, 0.04);
+}
+
+/* ── Badge glow — cold pulse ── */
+html[data-theme="light"] .hero-badge {
+  background: rgba(14, 165, 201, 0.06);
+  border-color: rgba(14, 165, 201, 0.22);
+}
+
+/* ── Buttons — icy accents ── */
+html[data-theme="light"] .btn-neon {
+  box-shadow: 0 0 24px rgba(14, 165, 201, 0.2);
+}
+html[data-theme="light"] .btn-neon:hover {
+  box-shadow: 0 0 40px rgba(14, 165, 201, 0.3);
+}
+html[data-theme="light"] .btn-ghost {
+  border-color: rgba(14, 165, 201, 0.25);
+}
+html[data-theme="light"] .btn-ghost:hover {
+  border-color: rgba(14, 165, 201, 0.5);
+  color: #0891b2;
+}
+
+/* ── Scrollbar — ice ── */
+html[data-theme="light"]::-webkit-scrollbar-thumb {
+  background: rgba(14, 165, 201, 0.2);
+}
+html[data-theme="light"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 201, 0.5);
+}
+
+/* ── Card shine on hover — cold shimmer ── */
+html[data-theme="light"] .stat-card:hover::after,
+html[data-theme="light"] .skill-card:hover::after,
+html[data-theme="light"] .project-card:hover::after,
+html[data-theme="light"] .contact-card:hover::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(180, 235, 255, 0.15),
+    transparent
+  );
+}
+
+/* ── Section labels + footer — icy ── */
+html[data-theme="light"] .footer {
+  border-top-color: rgba(14, 165, 201, 0.1);
+}
+
+/* Desktop-only: pull nav content inward */
+@media (min-width: 1025px){
+  :root{
+    --nav-pad: 1.5rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CARD HOVER STABILIZER — smooth, consistent motion
+   ═══════════════════════════════════════════════════════ */
+
+:root{
+  --card-hover-ms: 420ms;
+  --card-lift: 6px;
+}
+html[data-theme="light"]{
+  --card-lift: 4px; /* smaller lift in light mode feels more premium */
+}
+
+.stat-card,
+.skill-card,
+.project-card,
+.contact-card{
+  /* one consistent transition (overrides earlier transition: all) */
+  transition:
+    transform var(--card-hover-ms) var(--ease-out),
+    box-shadow var(--card-hover-ms) var(--ease-out),
+    border-color var(--card-hover-ms) var(--ease-out);
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
+}
+
+/* Only apply hover motion on real hover devices */
+@media (hover: hover) and (pointer: fine){
+  .stat-card:hover,
+  .skill-card:hover,
+  .project-card:hover,
+  .contact-card:hover{
+    transform: translate3d(0, calc(var(--card-lift) * -1), 0);
+  }
 }
