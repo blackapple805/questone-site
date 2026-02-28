@@ -34,13 +34,13 @@ html, body {
   --bg: #0a0a0a;
   --text: #f0f0f0;
   --dragon-size: clamp(340px, 38vw, 680px);
+  --hound-size: var(--dragon-size);
 }
 
 html:not([data-theme]) *,
 html:not([data-theme]) *::before,
 html:not([data-theme]) *::after {
   transition: none !important;
-  animation: none !important;
 }
 
 html[data-theme]:not([data-theme-ready]) *,
@@ -990,24 +990,62 @@ canvas.particle-canvas {
 }
 
 /* ═══════════════════════════════════════════════════════
-   PROJECTS
+   PROJECTS (updated for Projects header + Hellhound)
    ═══════════════════════════════════════════════════════ */
 
+/* Header layout: text + hound (desktop), stacked (mobile) */
+.projects-head{
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 2.25rem;
+  min-width: 0;
+}
+.projects-head-text{ min-width: 0; }
+
+/* Projects header hound box: same sizing behavior as dragon */
+.projects-head-hound{
+  width: var(--dragon-size);     /* ← match dragon exactly */
+  max-width: 100%;
+  aspect-ratio: 3 / 2;           /* ← match dragon-stack */
+  justify-self: end;
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+/* Ensure the rig fills the sized wrapper */
+.projects-head-hound .hellhound-container,
+.projects-head-hound .hellhound-stack{
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Your existing projects grid + cards (kept) ── */
 .projects-grid{
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
 }
 
 .project-card{
   background: var(--card-glass);
   border: 1px solid var(--card-glass-border);
-  border-radius: 14px; padding: 2rem;
+  border-radius: 14px;
+  padding: 2rem;
+  padding-top: 3.25rem;
+  position: relative;
+  overflow: hidden;
+
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+
   transition:
     transform 0.35s var(--ease-out),
     box-shadow 0.35s var(--ease-out),
     border-color 0.35s var(--ease-out);
-  position: relative; overflow: hidden;
-  cursor: pointer; text-decoration: none; color: inherit; display: block;
-  padding-top: 3.25rem;
 
   /* IMPORTANT: allow grid item to shrink (prevents overflow) */
   min-width: 0;
@@ -1017,52 +1055,79 @@ canvas.particle-canvas {
   border-color: rgba(var(--neon-rgb), 0.18);
   box-shadow: var(--card-shadow-hover);
 }
+
 .project-card::before{
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
   background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.55), transparent);
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 .project-card:hover::before{ opacity: 1; }
 
 .project-card.featured{
   grid-column: 1 / -1;
-  display: grid; grid-template-columns: 1.3fr 1fr;
-  gap: 2.5rem; align-items: center;
-  padding-top: 3.25rem; text-align: left;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  padding-top: 3.25rem;
+  text-align: left;
 }
 .project-card.featured > div{
   align-self: start;
-
-  /* IMPORTANT: children can shrink in featured grid */
-  min-width: 0;
+  min-width: 0; /* children can shrink in featured grid */
 }
 
 .project-tag{
-  position: absolute; top: 1.1rem; left: 1.1rem;
-  margin: 0; z-index: 2;
-  display: inline-flex; align-items: center; justify-content: center;
+  position: absolute;
+  top: 1.1rem; left: 1.1rem;
+  margin: 0;
+  z-index: 2;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   font-family: var(--font-mono);
-  font-size: 0.58rem; font-weight: 650;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  padding: 0.32rem 0.75rem; border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+
   border: 1px solid rgba(var(--neon-rgb), 0.12);
   background: rgba(var(--neon-rgb), 0.08);
 }
 
 .project-title{
   font-family: var(--font-display);
-  font-size: 1.25rem; font-weight: 750;
-  margin-bottom: 0.75rem; letter-spacing: -0.02em;
-  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 750;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .arrow-icon{
-  display: inline-flex; align-items: center; justify-content: center;
-  opacity: 0.55; transform: translateY(-0.5px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 0.55;
+  transform: translateY(-0.5px);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .project-card:hover .arrow-icon{
-  opacity: 0.95; transform: translateY(-1px);
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
 .project-card p{
@@ -1070,10 +1135,10 @@ canvas.particle-canvas {
   font-size: 0.95rem;
   color: var(--text2);
   line-height: 1.7;
+
   max-width: min(58ch, 100%);
   margin: 0 auto;
 
-  /* keep long strings/URLs contained */
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1081,36 +1146,100 @@ canvas.particle-canvas {
 }
 
 .project-tech{
-  display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.25rem;
 }
 .project-card:not(.featured) .project-tech{ justify-content: center; }
 
 .project-preview{
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 12px; height: 220px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden;
+  border-radius: 12px;
+  height: 220px;
 
-  /* prevent preview area from forcing overflow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  overflow: hidden;
+
   min-width: 0;
 }
+
 .project-preview-text{
   font-family: var(--font-mono);
-  font-size: 0.85rem; color: var(--neon); z-index: 1;
+  font-size: 0.85rem;
+  color: var(--neon);
+  z-index: 1;
 
-  /* keep any long preview text contained */
   overflow-wrap: anywhere;
   word-break: break-word;
   hyphens: auto;
 }
+
 .project-preview::before{
-  content: ''; position: absolute; top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: conic-gradient(from 0deg, transparent, rgba(var(--neon-rgb), 0.05), transparent, rgba(var(--orange-rgb), 0.05), transparent);
-  /* Removed gradientShift — continuous animation on large pseudo-element */
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(var(--neon-rgb), 0.05),
+    transparent,
+    rgba(var(--orange-rgb), 0.05),
+    transparent
+  );
+  /* no continuous animation (perf) */
 }
 
+/* ──────────────────────────────────────────────────────
+   HOUND SIZE — match dragon sizing across breakpoints
+   Requires: :root { --hound-size: var(--dragon-size); }
+   (put that near your existing --dragon-size)
+   ────────────────────────────────────────────────────── */
+
+
+/* ── Responsive ── */
+@media (max-width: 900px){
+  .projects-head{
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .projects-head-hound{
+    width: var(--dragon-size); /* same as dragon */
+    justify-self: center;
+    opacity: 0.95;
+  }
+
+  /* Existing behavior you already had */
+  .projects-grid{ grid-template-columns: 1fr; }
+
+  .project-card.featured{
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    text-align: center;
+    align-items: start;
+  }
+  .project-card.featured .project-title{ justify-content: center; }
+  .project-card.featured .project-tech{ justify-content: center; }
+  .project-card.featured .project-preview{
+    width: 100%;
+    max-width: 520px;
+    margin: 0.25rem auto 0;
+    height: clamp(170px, 32vw, 220px);
+  }
+}
+
+@media (max-width: 420px){
+  .projects-head-hound{ opacity: 0.85; }
+}
 /* ═══════════════════════════════════════════════════════
    EDUCATION
    ═══════════════════════════════════════════════════════ */
@@ -1893,6 +2022,47 @@ html[data-theme="light"] .footer {
   :root{
     --nav-pad: 1.5rem;
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELLHOUND PLACEMENT — Projects sentinel
+   (adds real size so it cannot collapse)
+   ═══════════════════════════════════════════════════════ */
+
+.section-with-hound{
+  position: relative;
+  overflow: visible;
+}
+
+/* keep all normal section content above the sentinel */
+.section-with-hound > :not(.hellhound-sentinel){
+  position: relative;
+  z-index: 1;
+}
+
+.hellhound-sentinel{
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+
+  /* placement */
+  top: 52%;
+  right: 0;                 /* TEMP: keep it on-screen while testing */
+  transform: translateY(-50%);
+
+  /* size */
+  width: min(760px, 58vw);
+  aspect-ratio: 2 / 1;      /* IMPORTANT: gives the box real height */
+  max-width: 760px;
+
+  opacity: 0.92;
+  filter: saturate(1.02) contrast(1.02);
+}
+
+/* make sure the rig/image fills the sentinel box */
+.hellhound-sentinel > *{
+  width: 100%;
+  height: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════

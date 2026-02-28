@@ -1,4 +1,5 @@
 import DragonRig from "./DragonRig";
+import HellhoundRig from "./HellhoundRig";
 import QuestBladeLogo from "./QuestBladeLogo";
 import { useState, useEffect, useRef, useMemo } from "react";
 
@@ -503,11 +504,22 @@ export default function App() {
           PROJECTS — Tiered layout
           ═══════════════════════════════════════════════ */}
       <section className="section" id="projects">
-        <Reveal>
-          <p className="section-label">03 — Projects</p>
-          <h2 className="section-title">Things I've Built</h2>
-          <p className="section-desc">Real projects solving real problems — from cloud infrastructure and CI/CD pipelines to full-stack apps and IoT data systems.</p>
-        </Reveal>
+        <div className="projects-head">
+          <div className="projects-head-text">
+            <Reveal>
+              <p className="section-label">03 — Projects</p>
+              <h2 className="section-title">Things I've Built</h2>
+              <p className="section-desc">
+                Real projects solving real problems — from cloud infrastructure and
+                CI/CD pipelines to full-stack apps and IoT data systems.
+              </p>
+            </Reveal>
+          </div>
+
+          <div className="projects-head-hound" aria-hidden="true">
+            <HellhoundRig theme={theme} />
+          </div>
+        </div>
 
         {/* FEATURED — full-width hero card */}
         <Reveal>

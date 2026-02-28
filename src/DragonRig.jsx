@@ -1,29 +1,35 @@
 import { useState, useEffect, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════
-//  DragonRig v4
+//  DragonRig v5 — Seam-free edition
 //
-//  Changes from v3:
-//  - Wing slowed from 2.9s → 3.8s (matches head duration)
-//  - Head + wing + neck all share 3.8s cycle so they
-//    sync up at the end of each loop (return to rest together)
-//  - Wing keyframes redistributed for slower, heavier flap
-//  - Neck acts as bridge — same 3.8s cycle, dampened amplitude
-//  - Body/tail/legs unchanged (different durations = polyrhythm)
+//  Identical to v4 except:
+//  1. clip-path polygons → mask-image radial-gradients
+//     (soft elliptical edges instead of hard geometric cuts)
+//  2. Static base layer is FULL FRAME (no BASE_CORE_CLIP)
+//     so any gap between animated parts reveals the complete
+//     static image, not empty space
+//
+//  All keyframes, durations, delays, and transform-origins
+//  are UNCHANGED from v4.
 // ═══════════════════════════════════════════════════════
 
 const DARK_SRC = `${import.meta.env.BASE_URL}dragon_gold.png`;
 const LIGHT_SRC = `${import.meta.env.BASE_URL}dragon_ice.png`;
 
-const BASE_CORE_CLIP =
-  "polygon(14% 22%, 52% 16%, 64% 30%, 66% 58%, 58% 88%, 34% 94%, 18% 88%, 10% 62%, 12% 36%)";
-
 // Head + neck + wing all at 3.8s — they sync at loop boundary
 // Body/tail/legs keep their own durations for polyrhythm
+//
+// v4 clip-path → v5 mask-image mapping:
+//   Each polygon was converted to a radial-gradient ellipse
+//   centered on the polygon's centroid, sized to cover the
+//   same region with ~12% soft fade at edges.
+
 const PARTS = [
   {
     id: "rearLegs",
-    clipPath: "polygon(24% 50%, 66% 48%, 82% 100%, 26% 100%, 20% 72%)",
+    // v4: polygon(24% 50%, 66% 48%, 82% 100%, 26% 100%, 20% 72%)
+    mask: "radial-gradient(ellipse 24% 30% at 48% 72%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "50% 78%",
     animation: "rigRearLegShift",
     duration: 5.2,
@@ -32,7 +38,8 @@ const PARTS = [
   },
   {
     id: "frontLegs",
-    clipPath: "polygon(-6% 50%, 46% 48%, 66% 100%, -6% 100%, -10% 70%)",
+    // v4: polygon(-6% 50%, 46% 48%, 66% 100%, -6% 100%, -10% 70%)
+    mask: "radial-gradient(ellipse 28% 32% at 24% 72%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "24% 80%",
     animation: "rigFrontLegShift",
     duration: 5.0,
@@ -41,7 +48,8 @@ const PARTS = [
   },
   {
     id: "body",
-    clipPath: "polygon(22% 30%, 44% 24%, 62% 32%, 66% 52%, 60% 78%, 38% 84%, 24% 66%, 18% 46%)",
+    // v4: polygon(22% 30%, 44% 24%, 62% 32%, 66% 52%, 60% 78%, 38% 84%, 24% 66%, 18% 46%)
+    mask: "radial-gradient(ellipse 28% 32% at 42% 52%, black 0%, black 48%, transparent 88%)",
     transformOrigin: "42% 56%",
     animation: "rigBodyBreathe",
     duration: 5.4,
@@ -50,7 +58,8 @@ const PARTS = [
   },
   {
     id: "tail",
-    clipPath: "polygon(52% 48%, 70% 46%, 88% 50%, 100% 58%, 98% 80%, 86% 86%, 66% 76%, 54% 66%)",
+    // v4: polygon(52% 48%, 70% 46%, 88% 50%, 100% 58%, 98% 80%, 86% 86%, 66% 76%, 54% 66%)
+    mask: "radial-gradient(ellipse 28% 22% at 76% 64%, black 0%, black 44%, transparent 86%)",
     transformOrigin: "60% 62%",
     animation: "rigTailSway",
     duration: 4.6,
@@ -59,25 +68,28 @@ const PARTS = [
   },
   {
     id: "wing",
-    clipPath: "polygon(50% 10%, 76% 7%, 100% 20%, 98% 46%, 74% 56%, 58% 40%)",
+    // v4: polygon(50% 10%, 76% 7%, 100% 20%, 98% 46%, 74% 56%, 58% 40%)
+    mask: "radial-gradient(ellipse 28% 26% at 76% 30%, black 0%, black 44%, transparent 86%)",
     transformOrigin: "56% 34%",
     animation: "rigWingFlap",
-    duration: 3.8,      // ← matched to head
-    delay: 0,           // ← no offset, syncs with head at 0% and 100%
+    duration: 3.8,
+    delay: 0,
     zIndex: 6,
   },
   {
     id: "neck",
-    clipPath: "polygon(12% 10%, 30% 7%, 52% 14%, 56% 28%, 48% 48%, 30% 60%, 12% 44%)",
+    // v4: polygon(12% 10%, 30% 7%, 52% 14%, 56% 28%, 48% 48%, 30% 60%, 12% 44%)
+    mask: "radial-gradient(ellipse 24% 28% at 32% 32%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "30% 44%",
     animation: "rigNeckFollow",
-    duration: 3.8,      // ← matched to head + wing
-    delay: 0,           // ← syncs with both
+    duration: 3.8,
+    delay: 0,
     zIndex: 7,
   },
   {
     id: "head",
-    clipPath: "polygon(0% 6%, 20% 4%, 36% 14%, 38% 30%, 30% 50%, 16% 58%, 2% 50%, 0% 28%)",
+    // v4: polygon(0% 6%, 20% 4%, 36% 14%, 38% 30%, 30% 50%, 16% 58%, 2% 50%, 0% 28%)
+    mask: "radial-gradient(ellipse 20% 24% at 18% 30%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "22% 34%",
     animation: "rigHeadBob",
     duration: 3.8,
@@ -86,13 +98,7 @@ const PARTS = [
   },
 ];
 
-// ── KEYFRAMES ──
-// Head, neck, wing all return to neutral at 100% together.
-// Within the cycle they move independently but converge at
-// the loop boundary so there's no visual "pop" on restart.
-//
-// Wing: slowed down, heavier feel — fewer direction changes,
-// longer holds at peak positions
+// ── KEYFRAMES — identical to v4, zero changes ──
 
 const KEYFRAMES = `
 @keyframes rigHeadBob {
@@ -207,15 +213,10 @@ function DragonLayer({ src, active, loaded, onLoad, variant, animate, debug = fa
         filter: active ? glowFilter : "none",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          clipPath: BASE_CORE_CLIP,
-          WebkitClipPath: BASE_CORE_CLIP,
-        }}
-      >
+      {/* v5 CHANGE: Static base is now FULL FRAME — no clip-path.
+          Any gap between animated parts reveals this complete image.
+          Dark-on-dark = invisible seam. */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
         <img
           src={src}
           alt=""
@@ -227,14 +228,19 @@ function DragonLayer({ src, active, loaded, onLoad, variant, animate, debug = fa
         />
       </div>
 
+      {/* v5 CHANGE: clip-path → mask-image with soft elliptical edges.
+          Each part fades smoothly into the static base at its borders
+          instead of having a hard geometric cut line. */}
       {PARTS.map((part) => (
         <div
           key={part.id}
           style={{
             position: "absolute",
             inset: 0,
-            clipPath: part.clipPath,
-            WebkitClipPath: part.clipPath,
+            WebkitMaskImage: part.mask,
+            maskImage: part.mask,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
             transformOrigin: part.transformOrigin,
             zIndex: part.zIndex,
             animation: animate
@@ -242,8 +248,10 @@ function DragonLayer({ src, active, loaded, onLoad, variant, animate, debug = fa
               : "none",
             animationPlayState: animate ? "running" : "paused",
             willChange: animate ? "transform" : "auto",
-            outline: debug ? "1px solid rgba(255,0,0,0.55)" : "none",
-            background: debug ? "rgba(255,0,0,0.06)" : "transparent",
+            ...(debug && {
+              background: `hsla(${part.zIndex * 40}, 80%, 50%, 0.12)`,
+              outline: "1px solid rgba(255,0,0,0.4)",
+            }),
           }}
         >
           <img

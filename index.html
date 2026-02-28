@@ -2,37 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Helps browsers style built-in UI correctly before CSS loads -->
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- Optional: nicer address-bar color on mobile -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>questone-site</title>
 
-    <!-- ✅ Theme boot (prevents white flash) -->
+    <!-- ✅ Theme boot (prevents white flash + avoids animation resets) -->
     <script>
       (function () {
         try {
-          // expects localStorage key "theme" => "dark" | "light"
+          var root = document.documentElement;
+
+          // read + validate theme
           var saved = localStorage.getItem("theme");
+          var validSaved = saved === "dark" || saved === "light" ? saved : null;
+
           var prefersDark =
             window.matchMedia &&
             window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-          var theme = saved || (prefersDark ? "dark" : "light");
-          var root = document.documentElement;
+          var theme = validSaved || (prefersDark ? "dark" : "light");
 
+          // Always set a theme attribute ASAP so any global "no-theme" CSS never applies
           root.setAttribute("data-theme", theme);
 
-          // Hard paint guard while CSS loads
-          root.style.backgroundColor = theme === "dark" ? "#0a0a0a" : "#f5f4f0";
+          // Paint guard while CSS loads (prevents flash)
+          root.style.backgroundColor = theme === "dark" ? "#0a0a0a" : "#ffffff";
+          root.style.colorScheme = theme;
 
-          // Enable transitions after correct theme is set
-          root.setAttribute("data-theme-ready", "1");
+          // Enable transitions AFTER initial paint (prevents transition/animation hiccups)
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              root.setAttribute("data-theme-ready", "");
+              // optionally clear the inline guard once your CSS has taken over
+              // root.style.backgroundColor = "";
+            });
+          });
         } catch (e) {}
       })();
     </script>
 
-    <!-- Fonts: Sora (display) + Crimson Pro (body) + IBM Plex Mono -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -40,9 +61,9 @@
       rel="stylesheet"
     />
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-
