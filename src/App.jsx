@@ -314,7 +314,6 @@ export default function App() {
   const contacts = useMemo(() => [
     { iconKey: "Email", label: "Email", value: "eric.dangel.dev@gmail.com", href: "mailto:eric.dangel.dev@gmail.com" },
     { iconKey: "GitHub", label: "GitHub", value: "github.com/blackapple805", href: "https://github.com/blackapple805" },
-    { iconKey: "WhatsApp", label: "WhatsApp", value: "(805) 676-8875", href: "https://wa.me/18056768875" },
     { iconKey: "Instagram", label: "Instagram", value: "@quest.on.a.dream", href: "https://instagram.com/quest.on.a.dream" },
     { iconKey: "LinkedIn", label: "LinkedIn", value: "in/eric-del-angel", href: "https://www.linkedin.com/in/eric-del-angel/" },
     { iconKey: "Location", label: "Location", value: "United States", href: null },
