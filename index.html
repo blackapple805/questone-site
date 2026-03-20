@@ -16,7 +16,14 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>questone-site</title>
+
+    <!-- SEO & Social -->
+    <title>Eric Del Angel — DevOps & Infrastructure Engineer</title>
+    <meta name="description" content="DevOps engineer and aspiring electrician building cloud infrastructure, CI/CD pipelines, and full-stack applications. Open to opportunities." />
+    <meta property="og:title" content="Eric Del Angel — DevOps & Infrastructure Engineer" />
+    <meta property="og:description" content="Cloud infrastructure, CI/CD automation, and hands-on engineering." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.questone.cloud/" />
 
     <!-- ✅ Theme boot (prevents white flash + avoids animation resets) -->
     <script>
@@ -45,8 +52,6 @@
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
               root.setAttribute("data-theme-ready", "");
-              // optionally clear the inline guard once your CSS has taken over
-              // root.style.backgroundColor = "";
             });
           });
         } catch (e) {}

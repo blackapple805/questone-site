@@ -1,15 +1,18 @@
 import DragonRig from "./DragonRig";
 import HellhoundRig from "./HellhoundRig";
 import QuestBladeLogo from "./QuestBladeLogo";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 // ═══════════════════════════════════════════════════════
-//  ERIC — Creative Resume Site v4
-//  Changes from v3:
-//  - Projects: tiered layout (featured/primary/secondary)
-//  - Projects: left-aligned text, stronger light theme
-//  - About: rewritten copy for recruiter engagement
-//  - About: tighter grid with personality
+//  ERIC — Creative Resume Site v5
+//  Upgrades from v4:
+//  - Scroll progress bar in nav
+//  - Enhanced Reveal system with stagger, glitch, split
+//  - Parallax depth on background elements
+//  - Cinematic hero entrance sequence
+//  - Live project demo previews (animated)
+//  - Magnetic button hover effect
+//  - Section transition lines
 // ═══════════════════════════════════════════════════════
 
 const SECTIONS = ["home", "about", "skills", "projects", "education", "contact"];
@@ -111,7 +114,179 @@ const Icons = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  DRAGON HERO
+//  NEW: SCROLL PROGRESS BAR
+// ═══════════════════════════════════════════════════════
+
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(h > 0 ? (window.scrollY / h) * 100 : 0);
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "3px",
+      zIndex: 10001,
+      background: "transparent",
+      pointerEvents: "none",
+    }}>
+      <div style={{
+        height: "100%",
+        width: `${progress}%`,
+        background: "linear-gradient(90deg, var(--neon), var(--orange), var(--neon))",
+        backgroundSize: "200% 100%",
+        animation: "gradientShift 3s ease infinite",
+        boxShadow: `0 0 12px rgba(var(--neon-rgb), 0.5), 0 0 4px rgba(var(--neon-rgb), 0.3)`,
+        transition: "width 80ms linear",
+        borderRadius: "0 2px 2px 0",
+      }} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  NEW: SECTION DIVIDER — animated line between sections
+// ═══════════════════════════════════════════════════════
+
+function SectionDivider() {
+  const [ref, visible] = useScrollReveal(0.5);
+  return (
+    <div ref={ref} style={{
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "0 2rem",
+      overflow: "hidden",
+    }}>
+      <div style={{
+        height: "1px",
+        background: "linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.3), transparent)",
+        transform: visible ? "scaleX(1)" : "scaleX(0)",
+        transition: "transform 1.2s cubic-bezier(0.16,1,0.3,1)",
+        transformOrigin: "center",
+      }} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  NEW: LIVE PROJECT PREVIEW — animated terminal/browser
+// ═══════════════════════════════════════════════════════
+
+function LivePreview({ type = "terminal", lines = [], title = "" }) {
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [ref, visible] = useScrollReveal(0.3);
+
+  useEffect(() => {
+    if (!visible) return;
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      if (i > lines.length) { clearInterval(iv); return; }
+      setVisibleLines(i);
+    }, 400);
+    return () => clearInterval(iv);
+  }, [visible, lines.length]);
+
+  if (type === "browser") {
+    return (
+      <div ref={ref} className="project-preview" style={{ flexDirection: "column", padding: 0, height: "240px" }}>
+        {/* Browser chrome */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "6px",
+          padding: "10px 14px",
+          borderBottom: "1px solid var(--border)",
+          width: "100%",
+          background: "var(--bg2)",
+          borderRadius: "12px 12px 0 0",
+        }}>
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+          <div style={{
+            marginLeft: "12px", flex: 1, height: "22px", borderRadius: "4px",
+            background: "var(--bg3)", display: "flex", alignItems: "center",
+            padding: "0 10px", fontSize: "0.62rem", fontFamily: "var(--font-mono)",
+            color: "var(--text3)",
+          }}>
+            {title}
+          </div>
+        </div>
+        {/* Content area */}
+        <div style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "1rem",
+        }}>
+          <div style={{
+            fontFamily: "var(--font-mono)", fontSize: "0.78rem", color: "var(--neon)",
+            textAlign: "center", lineHeight: 1.8,
+          }}>
+            {lines.slice(0, visibleLines).map((line, i) => (
+              <div key={i} style={{
+                opacity: 1,
+                animation: "heroTagIn 0.4s var(--ease-out) both",
+              }}>{line}</div>
+            ))}
+            {visibleLines < lines.length && visible && (
+              <span className="cursor-blink">▌</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Terminal style
+  return (
+    <div ref={ref} className="project-preview" style={{ flexDirection: "column", padding: 0, height: "240px" }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: "6px",
+        padding: "10px 14px",
+        borderBottom: "1px solid var(--border)",
+        width: "100%",
+        background: "var(--bg2)",
+        borderRadius: "12px 12px 0 0",
+      }}>
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
+        <span style={{
+          marginLeft: "12px", fontFamily: "var(--font-mono)",
+          fontSize: "0.6rem", color: "var(--text3)",
+        }}>~/{title}</span>
+      </div>
+      <div style={{
+        flex: 1, padding: "14px 16px", overflow: "hidden",
+        fontFamily: "var(--font-mono)", fontSize: "0.72rem",
+        lineHeight: 1.7,
+      }}>
+        {lines.slice(0, visibleLines).map((line, i) => (
+          <div key={i} style={{
+            color: line.startsWith("$") ? "var(--neon)" : "var(--text2)",
+            opacity: 1,
+          }}>
+            {line}
+          </div>
+        ))}
+        {visibleLines < lines.length && visible && (
+          <span style={{ color: "var(--neon)" }} className="cursor-blink">▌</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAGON HERO (unchanged)
 // ═══════════════════════════════════════════════════════
 
 function DragonHero({ theme }) {
@@ -129,7 +304,7 @@ function DragonHero({ theme }) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  PARTICLE FIELD
+//  PARTICLE FIELD (unchanged)
 // ═══════════════════════════════════════════════════════
 
 function ParticleField({ theme }) {
@@ -185,7 +360,10 @@ function ParticleField({ theme }) {
   return <canvas ref={canvasRef} className="particle-canvas" />;
 }
 
-// ── Helpers ──
+// ═══════════════════════════════════════════════════════
+//  HELPERS — Enhanced
+// ═══════════════════════════════════════════════════════
+
 function Typewriter({ text, speed = 50, delay = 0 }) {
   const [displayed, setDisplayed] = useState("");
   const [started, setStarted] = useState(false);
@@ -201,12 +379,94 @@ function useScrollReveal(threshold = 0.15) {
   return [ref, visible];
 }
 
-function Reveal({ children, delay = 0, direction = "up" }) {
+// ── UPGRADED REVEAL — supports multiple animation types ──
+function Reveal({ children, delay = 0, direction = "up", type = "default" }) {
   const [ref, visible] = useScrollReveal();
-  const transforms = { up: "translateY(60px)", down: "translateY(-60px)", left: "translateX(60px)", right: "translateX(-60px)", scale: "scale(0.9)" };
+
+  const transforms = {
+    up: "translateY(60px)",
+    down: "translateY(-60px)",
+    left: "translateX(60px)",
+    right: "translateX(-60px)",
+    scale: "scale(0.85)",
+    none: "none",
+  };
+
+  // Glitch type: skew + translate
+  if (type === "glitch") {
+    return (
+      <div ref={ref} style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "translateX(-20px) skewX(-3deg)",
+        filter: visible ? "none" : "blur(4px)",
+        transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms, filter 0.6s ease ${delay}ms`,
+      }}>
+        {children}
+      </div>
+    );
+  }
+
+  // Scale-rotate type: comes in with a slight rotation
+  if (type === "rotate") {
+    return (
+      <div ref={ref} style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "scale(0.9) rotate(-2deg)",
+        transition: `opacity 0.9s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.9s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+      }}>
+        {children}
+      </div>
+    );
+  }
+
+  // Blur-in type: dramatic focus pull
+  if (type === "focus") {
+    return (
+      <div ref={ref} style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "scale(1.05)",
+        filter: visible ? "blur(0px)" : "blur(8px)",
+        transition: `opacity 1s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 1s cubic-bezier(0.16,1,0.3,1) ${delay}ms, filter 1s ease ${delay}ms`,
+      }}>
+        {children}
+      </div>
+    );
+  }
+
+  // Default
   return (
-    <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? "none" : transforms[direction], transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms` }}>
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "none" : transforms[direction],
+      transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+    }}>
       {children}
+    </div>
+  );
+}
+
+// ── NEW: STAGGER REVEAL — staggers children automatically ──
+function StaggerReveal({ children, staggerMs = 80, direction = "up", baseDelay = 0 }) {
+  const [ref, visible] = useScrollReveal();
+  const transforms = {
+    up: "translateY(40px)",
+    left: "translateX(40px)",
+    right: "translateX(-40px)",
+    scale: "scale(0.9)",
+  };
+  const items = Array.isArray(children) ? children : [children];
+
+  return (
+    <div ref={ref}>
+      {items.map((child, i) => (
+        <div key={i} style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? "none" : transforms[direction],
+          transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${baseDelay + i * staggerMs}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${baseDelay + i * staggerMs}ms`,
+        }}>
+          {child}
+        </div>
+      ))}
     </div>
   );
 }
@@ -233,6 +493,41 @@ function SkillBar({ label, level, rgbVar = "var(--neon-rgb)", delay = 0 }) {
   );
 }
 
+// ── NEW: MAGNETIC BUTTON — subtle follow-the-cursor effect ──
+function MagneticButton({ children, className = "", href, onClick, style = {} }) {
+  const ref = useRef(null);
+
+  const handleMouse = useCallback((e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) * 0.15;
+    const y = (e.clientY - rect.top - rect.height / 2) * 0.15;
+    el.style.transform = `translate(${x}px, ${y}px)`;
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    const el = ref.current;
+    if (el) el.style.transform = "translate(0, 0)";
+  }, []);
+
+  const Tag = href ? "a" : "button";
+  const props = href ? { href, target: href.startsWith("http") ? "_blank" : undefined, rel: "noopener noreferrer" } : { onClick };
+
+  return (
+    <Tag
+      ref={ref}
+      className={className}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      style={{ ...style, transition: "transform 0.3s var(--ease-out), box-shadow 0.25s, border-color 0.25s, opacity 0.25s", willChange: "transform" }}
+      {...props}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 // ═══════════════════════════════════════════════════════
 //  MAIN APP
 // ═══════════════════════════════════════════════════════
@@ -244,7 +539,16 @@ export default function App() {
   const [scrollY, setScrollY] = useState(0);
   const [theme, setTheme] = useState("dark");
 
-  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("theme", theme); } catch(e) {}
+  }, [theme]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark" || saved === "light") setTheme(saved);
+    } catch(e) {}
+  }, []);
   useEffect(() => { const t = setTimeout(() => setLoaded(true), 300); return () => clearTimeout(t); }, []);
   useEffect(() => { const t = setTimeout(() => setHeroReady(true), 800); return () => clearTimeout(t); }, []);
 
@@ -277,9 +581,7 @@ export default function App() {
     { title: "Electrical & IoT", Icon: Icons.Bolt, color: "var(--pink)", items: ["NEC Code", "Circuit Analysis", "Conduit Bending", "ESP8266", "IoT Sensors", "Panel Layout"] },
   ], []);
 
-  // ═══════════════════════════════════════════════════════
-  //  PROJECTS — Tiered: 1 featured + 3 primary + 4 compact
-  // ═══════════════════════════════════════════════════════
+  // ── PROJECTS DATA ──
 
   const featuredProject = useMemo(() => ({
     title: "NoteStream",
@@ -288,12 +590,41 @@ export default function App() {
     desc: "A full-stack note-taking app with AI-powered features, tiered subscriptions, and a responsive dashboard. Built with React on the frontend and Supabase on the back — complete with row-level security, edge functions, and real-time sync.",
     tech: ["React", "Supabase", "AI", "Edge Functions", "RLS"],
     href: "https://github.com/blackapple805/notestream-site",
+    previewLines: [
+      "$ npm run dev",
+      "▸ NoteStream v2.0 ready",
+      "▸ Supabase connected",
+      "▸ AI engine loaded",
+      "▸ Auth: RLS policies active",
+      "▸ http://localhost:3000",
+    ],
   }), []);
 
   const primaryProjects = useMemo(() => [
-    { title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)", desc: "Portfolio and cloud landing page showcasing DevOps projects and professional presence. Deployed on Vercel.", tech: ["React", "JavaScript", "CSS"], href: "https://github.com/blackapple805/questone-site" },
-    { title: "IoT Log", tag: "IOT", tagColor: "var(--pink)", desc: "ESP8266 data pipeline that pushes JSON sensor readings directly to GitHub. Hardware meets version control.", tech: ["ESP8266", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log" },
-    { title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)", desc: "Customized Terraform module for provisioning AWS VPC resources. Repeatable, scalable infrastructure as code.", tech: ["Terraform", "AWS", "HCL"], href: "https://github.com/blackapple805/terraform-aws-vpc" },
+    {
+      title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)",
+      desc: "Portfolio and cloud landing page showcasing DevOps projects and professional presence. Deployed on Vercel.",
+      tech: ["React", "JavaScript", "CSS"], href: "https://github.com/blackapple805/questone-site",
+      previewType: "browser",
+      previewLines: ["⚡ questone.cloud", "→ React + Vite", "→ Cyberpunk UI", "→ Deployed on Vercel"],
+      previewTitle: "questone.cloud",
+    },
+    {
+      title: "IoT Log", tag: "IOT", tagColor: "var(--pink)",
+      desc: "ESP8266 data pipeline that pushes JSON sensor readings directly to GitHub. Hardware meets version control.",
+      tech: ["ESP8266", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log",
+      previewType: "terminal",
+      previewLines: ["$ cat sensor_data.json", '{"temp": 72.4, "humidity": 45}', "$ git push origin main", "→ Sensor data committed"],
+      previewTitle: "iot-log",
+    },
+    {
+      title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)",
+      desc: "Customized Terraform module for provisioning AWS VPC resources. Repeatable, scalable infrastructure as code.",
+      tech: ["Terraform", "AWS", "HCL"], href: "https://github.com/blackapple805/terraform-aws-vpc",
+      previewType: "terminal",
+      previewLines: ["$ terraform plan", "→ 12 resources to add", "$ terraform apply", "→ VPC created ✓"],
+      previewTitle: "terraform-aws-vpc",
+    },
   ], []);
 
   const secondaryProjects = useMemo(() => [
@@ -319,10 +650,19 @@ export default function App() {
     { iconKey: "Location", label: "Location", value: "United States", href: null },
   ], []);
 
-  const heroAnim = (d) => ({ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(30px)", transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${d}s` });
+  // ── HERO ANIMATION HELPERS ──
+  const heroAnim = (d) => ({
+    opacity: heroReady ? 1 : 0,
+    transform: heroReady ? "translateY(0)" : "translateY(30px)",
+    filter: heroReady ? "blur(0px)" : "blur(4px)",
+    transition: `all 1s cubic-bezier(0.16,1,0.3,1) ${d}s`,
+  });
 
   return (
     <>
+      {/* SCROLL PROGRESS */}
+      <ScrollProgress />
+
       {/* LOADER */}
       <div className={`loader ${loaded ? "done" : ""}`}>
         <div className="loader-text">INITIALIZING</div>
@@ -369,39 +709,42 @@ export default function App() {
           </div>
         </div>
       </nav>
-      {/* HERO */}
+
+      {/* ═══════════════════════════════════════════════
+          HERO — Enhanced entrance with blur + stagger
+          ═══════════════════════════════════════════════ */}
       <section className="hero" id="home">
         <div className="hero-card">
           <div className="hero-layout">
             <div className="hero-content">
-              <div style={heroAnim(0)}>
+              <div style={heroAnim(0.1)}>
                 <div className="hero-badge">
                   <span className="dot" />
                   <Typewriter text="OPEN TO OPPORTUNITIES" speed={40} delay={1200} />
                 </div>
               </div>
-              <h1 style={heroAnim(0.2)}>
+              <h1 style={heroAnim(0.25)}>
                 <span className="hero-line1">CIRCUITS,</span>
                 <span className="hero-line2">CODE &</span>
                 <span className="hero-line3">CRAFT<span className="accent">.</span></span>
               </h1>
-              <p className="hero-sub" style={heroAnim(0.4)}>
+              <p className="hero-sub" style={heroAnim(0.45)}>
                 Aspiring electrician and DevOps engineer blending hands-on trade skills
                 with cloud infrastructure, CI/CD automation, and a love for building
                 things that work.
               </p>
-              <div className="hero-tags" style={heroAnim(0.5)}>
+              <div className="hero-tags" style={heroAnim(0.55)}>
                 {["DEVOPS", "CLOUD", "REACT", "LINUX", "SECURITY", "ELECTRICAL"].map(t => (
                   <span key={t} className="hero-tag">{t}</span>
                 ))}
               </div>
-              <div className="hero-actions" style={heroAnim(0.6)}>
-                <a href="#projects" className="btn-neon" onClick={(e) => { e.preventDefault(); scrollTo("projects"); }}>
+              <div className="hero-actions" style={heroAnim(0.65)}>
+                <MagneticButton className="btn-neon" onClick={() => scrollTo("projects")}>
                   <span>View My Work</span><span>→</span>
-                </a>
-                <a href="#contact" className="btn-ghost" onClick={(e) => { e.preventDefault(); scrollTo("contact"); }}>
+                </MagneticButton>
+                <MagneticButton className="btn-ghost" onClick={() => scrollTo("contact")}>
                   <span>Get in Touch</span>
-                </a>
+                </MagneticButton>
               </div>
             </div>
             <div className="hero-visual" style={heroAnim(0.3)}>
@@ -415,19 +758,26 @@ export default function App() {
         </div>
       </section>
 
+      <SectionDivider />
+
       {/* ═══════════════════════════════════════════════
-          ABOUT — Rewritten for engagement
+          ABOUT — Glitch reveal + staggered stats
           ═══════════════════════════════════════════════ */}
       <section className="section" id="about">
-        <Reveal><p className="section-label">01 — About</p><h2 className="section-title">Who I Am</h2></Reveal>
+        <Reveal type="glitch">
+          <p className="section-label">01 — About</p>
+          <h2 className="section-title">Who I Am</h2>
+        </Reveal>
         <div className="about-grid">
-          <Reveal delay={100}>
+          <StaggerReveal staggerMs={120} baseDelay={100}>
             <div className="about-text">
               <p>
                 I'm <strong>Eric</strong> — and I don't just write code, I build systems. The kind that stay up at 3 AM when
                 nobody's watching. I got into tech because I wanted to understand how everything connects: the server, the
                 pipeline, the network, the wire in the wall. That curiosity hasn't slowed down.
               </p>
+            </div>
+            <div className="about-text">
               <p>
                 Right now I'm focused on <strong>DevOps and cloud infrastructure</strong> — spinning up AWS environments with
                 Terraform, wiring CI/CD pipelines through Jenkins and GitHub Actions, and monitoring it all with Prometheus.
@@ -435,6 +785,8 @@ export default function App() {
                 <strong>IoT data pipeline</strong> that pushes ESP8266 sensor readings straight to GitHub. If there's a system
                 involved, I want to understand every layer of it.
               </p>
+            </div>
+            <div className="about-text">
               <p>
                 On a parallel track, I'm preparing for an <strong>electrical apprenticeship</strong> — studying NEC code,
                 circuit theory, and conduit bending. People think software and electrical are different worlds. They're not.
@@ -443,35 +795,39 @@ export default function App() {
                 way to learn anything is to take it apart and put it back together.
               </p>
             </div>
-          </Reveal>
-          <Reveal delay={300}>
-            <div className="about-stats">
-              {[
-                { number: <Counter target={10} />, label: "Repositories" },
-                { number: <Counter target={6} />, label: "Skill Domains" },
-                { number: "∞", label: "Curiosity", style: { fontSize: "1.75rem" } },
-                { number: "24/7", label: "Always Building", style: { fontSize: "1.5rem" } },
-              ].map((s, i) => (
-                <div key={i} className="stat-card">
+          </StaggerReveal>
+          <div className="about-stats">
+            {[
+              { number: <Counter target={10} />, label: "Repositories" },
+              { number: <Counter target={6} />, label: "Skill Domains" },
+              { number: "∞", label: "Curiosity", style: { fontSize: "1.75rem" } },
+              { number: "24/7", label: "Always Building", style: { fontSize: "1.5rem" } },
+            ].map((s, i) => (
+              <Reveal key={i} delay={200 + i * 120} type="rotate">
+                <div className="stat-card">
                   <div className="stat-number" style={s.style}>{s.number}</div>
                   <div className="stat-label">{s.label}</div>
                 </div>
-              ))}
-            </div>
-          </Reveal>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* SKILLS */}
+      <SectionDivider />
+
+      {/* ═══════════════════════════════════════════════
+          SKILLS — Focus-pull reveal + staggered cards
+          ═══════════════════════════════════════════════ */}
       <section className="section" id="skills">
-        <Reveal>
+        <Reveal type="focus">
           <p className="section-label">02 — Skills</p>
           <h2 className="section-title">My Toolkit</h2>
           <p className="section-desc">A cross-disciplinary toolkit forged through real projects — from provisioning cloud infrastructure to writing code to wiring panels.</p>
         </Reveal>
         <div className="skills-grid">
           {skillCategories.map((cat, i) => (
-            <Reveal key={cat.title} delay={i * 80}>
+            <Reveal key={cat.title} delay={i * 100} type="rotate">
               <div className="skill-card">
                 <div className="skill-icon" style={{ background: `rgba(var(--neon-rgb), 0.1)`, color: cat.color }}>
                   <cat.Icon size={24} color={cat.color} />
@@ -484,7 +840,7 @@ export default function App() {
             </Reveal>
           ))}
         </div>
-        <Reveal delay={200}>
+        <Reveal delay={200} type="focus">
           <div className="proficiency">
             <h3>// Proficiency Levels</h3>
             <div className="prof-grid">
@@ -499,13 +855,15 @@ export default function App() {
         </Reveal>
       </section>
 
+      <SectionDivider />
+
       {/* ═══════════════════════════════════════════════
-          PROJECTS — Tiered layout
+          PROJECTS — Live previews + enhanced reveals
           ═══════════════════════════════════════════════ */}
       <section className="section" id="projects">
         <div className="projects-head">
           <div className="projects-head-text">
-            <Reveal>
+            <Reveal type="glitch">
               <p className="section-label">03 — Projects</p>
               <h2 className="section-title">Things I've Built</h2>
               <p className="section-desc">
@@ -520,8 +878,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* FEATURED — full-width hero card */}
-        <Reveal>
+        {/* FEATURED — full-width with live terminal preview */}
+        <Reveal type="focus">
           <a href={featuredProject.href} target="_blank" rel="noopener noreferrer"
             className="project-card featured"
             style={{ textAlign: "left" }}
@@ -537,16 +895,18 @@ export default function App() {
                 {featuredProject.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
               </div>
             </div>
-            <div className="project-preview">
-              <span className="project-preview-text">&lt;NoteStream /&gt;</span>
-            </div>
+            <LivePreview
+              type="terminal"
+              title="notestream"
+              lines={featuredProject.previewLines}
+            />
           </a>
         </Reveal>
 
-        {/* PRIMARY — 3 medium cards */}
+        {/* PRIMARY — 3 medium cards with live previews */}
         <div className="projects-grid" style={{ marginTop: "1.25rem" }}>
           {primaryProjects.map((proj, i) => (
-            <Reveal key={proj.title} delay={i * 100}>
+            <Reveal key={proj.title} delay={i * 120} type="rotate">
               <a href={proj.href} target="_blank" rel="noopener noreferrer" className="project-card" style={{ textAlign: "left" }}>
                 <div>
                   <span className="project-tag" style={{ color: proj.tagColor }}>{proj.tag}</span>
@@ -559,12 +919,19 @@ export default function App() {
                     {proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
                   </div>
                 </div>
+                {proj.previewLines && (
+                  <LivePreview
+                    type={proj.previewType || "terminal"}
+                    title={proj.previewTitle || proj.title}
+                    lines={proj.previewLines}
+                  />
+                )}
               </a>
             </Reveal>
           ))}
         </div>
 
-        {/* SECONDARY — 4 compact cards in a row */}
+        {/* SECONDARY — 4 compact cards */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -572,7 +939,7 @@ export default function App() {
           marginTop: "1.25rem",
         }}>
           {secondaryProjects.map((proj, i) => (
-            <Reveal key={proj.title} delay={i * 80}>
+            <Reveal key={proj.title} delay={i * 80} type="glitch">
               <a href={proj.href} target="_blank" rel="noopener noreferrer"
                 className="project-card"
                 style={{
@@ -615,16 +982,20 @@ export default function App() {
         </div>
       </section>
 
-      {/* EDUCATION */}
+      <SectionDivider />
+
+      {/* ═══════════════════════════════════════════════
+          EDUCATION — Staggered timeline
+          ═══════════════════════════════════════════════ */}
       <section className="section" id="education">
-        <Reveal>
+        <Reveal type="glitch">
           <p className="section-label">04 — Education</p>
           <h2 className="section-title">Never Stop Learning</h2>
           <p className="section-desc">A mix of structured study and relentless self-teaching across electrical, security, and development.</p>
         </Reveal>
         <div className="edu-timeline">
           {education.map((edu, i) => (
-            <Reveal key={edu.title} delay={i * 120}>
+            <Reveal key={edu.title} delay={i * 150} direction="left">
               <div className="edu-item">
                 <div className="edu-rail" aria-hidden="true">
                   <div className="edu-dot">
@@ -644,9 +1015,13 @@ export default function App() {
         </div>
       </section>
 
-      {/* CONTACT */}
+      <SectionDivider />
+
+      {/* ═══════════════════════════════════════════════
+          CONTACT — Staggered cards
+          ═══════════════════════════════════════════════ */}
       <section className="section" id="contact">
-        <Reveal>
+        <Reveal type="focus">
           <p className="section-label">05 — Contact</p>
           <h2 className="section-title">Let's Connect</h2>
           <p className="section-desc">Open to apprenticeship opportunities, freelance work, or just talking tech. Reach out anytime.</p>
@@ -655,7 +1030,7 @@ export default function App() {
           {contacts.map((c, i) => {
             const IconComp = contactIcons[c.iconKey];
             return (
-              <Reveal key={c.label} delay={i * 80}>
+              <Reveal key={c.label} delay={i * 100} type="rotate">
                 <a href={c.href || "#"} className="contact-card" target={c.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer">
                   <div className="contact-icon"><IconComp size={22} color="var(--neon)" /></div>
                   <div><div className="contact-label">{c.label}</div><div className="contact-value">{c.value}</div></div>
