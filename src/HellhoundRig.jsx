@@ -1,21 +1,24 @@
-// src/HellhoundRig.jsx  — v9
+// src/HellhoundRig.jsx  — v10
 import { useEffect, useRef, useState } from "react";
 
 const DARK_SRC = `${import.meta.env.BASE_URL}hellhound.png`;
 const LIGHT_SRC = `${import.meta.env.BASE_URL}hellhound_ice.png`;
 
 /**
- * v9 — Full-body skeleton, 15 animated regions
+ * v10 — Natural motion refinement
  *
- * UPPER CHAIN: body → chest → neck → head → jaw
- * LOWER CHAIN: body → frontLegs → frontPaws
- *              body → haunch → rearLegs → rearPaws
- * DETAIL:      horns (micro-tremor from head)
- *              mouthFire (flicker, follows jaw)
- *              shoulderSpiral + hipSpiral (breathe-pulse)
- *              tail (independent fast flicker)
- *              spine (follows chest)
- *              groundGlow (pulses with breathing)
+ * Changes from v9:
+ * - Head: smoother arc with micro-hold at extremes
+ * - Jaw: gentler open/close, less snapping
+ * - Neck: better damped follow of head (~55% amplitude)
+ * - Body/Chest/Haunch: asymmetric breathing (slow inhale, quicker exhale)
+ * - Tail: weighted pendulum feel, faster through center
+ * - Legs/Paws: subtler weight-bearing shifts with rotation
+ * - Mouth fire: softer flicker, less mechanical oscillation
+ * - Horns: reduced amplitude, reads as vibration not bounce
+ * - All parts: more keyframe stops for smoother interpolation
+ *
+ * Structure, masks, durations, delays unchanged.
  */
 
 const MASTER = 5.4;
@@ -61,7 +64,7 @@ const PARTS = [
     z: 4,
   },
 
-  // ═══ SPIRAL GLOWS — the two big swirl marks pulse with breath ═══
+  // ═══ SPIRAL GLOWS ═══
   {
     id: "shoulderSpiral",
     mask: "radial-gradient(ellipse 12% 14% at 41% 38%, black 0%, black 40%, transparent 82%)",
@@ -110,7 +113,7 @@ const PARTS = [
     z: 8,
   },
 
-  // ═══ DETAIL — horns, mouth fire ═══
+  // ═══ DETAIL ═══
   {
     id: "horns",
     mask: "radial-gradient(ellipse 16% 10% at 20% 7%, black 0%, black 40%, transparent 84%)",
@@ -150,7 +153,7 @@ const PARTS = [
     z: 6,
   },
 
-  // ═══ PAWS — separate from legs, grip and flex ═══
+  // ═══ PAWS ═══
   {
     id: "frontPaws",
     mask: "radial-gradient(ellipse 16% 12% at 28% 90%, black 0%, black 42%, transparent 84%)",
@@ -170,7 +173,7 @@ const PARTS = [
     z: 7,
   },
 
-  // ═══ TAIL — fast independent flicker ═══
+  // ═══ TAIL ═══
   {
     id: "tail",
     mask: "radial-gradient(ellipse 26% 28% at 82% 28%, black 0%, black 38%, transparent 85%)",
@@ -181,7 +184,7 @@ const PARTS = [
     z: 4,
   },
 
-  // ═══ GROUND GLOW — pulses with breathing ═══
+  // ═══ GROUND GLOW ═══
   {
     id: "ground",
     mask: "radial-gradient(ellipse 42% 8% at 45% 94%, black 0%, black 40%, transparent 85%)",
@@ -195,193 +198,251 @@ const PARTS = [
 
 const KEYFRAMES = `
 /* ═══════════════════════════════════════════════════════
-   HELLHOUND v9 — 15-part skeleton idle
+   HELLHOUND v10 — Natural motion refinement
    ═══════════════════════════════════════════════════════ */
 
-/* ── CORE BREATHING ── */
+/* ── CORE BREATHING ──
+   Asymmetric cycle: slow inhale (0%→42%), brief hold (42%→50%),
+   quicker exhale (50%→88%), settle (88%→100%).
+   This is the master rhythm — everything else follows. */
 
 @keyframes houndBody {
   0%   { transform: scale(1) translateY(0) translateX(0); }
-  12%  { transform: scale(1.005) translateY(-0.3px) translateX(0.2px); }
-  28%  { transform: scale(1.012) translateY(-0.8px) translateX(0.3px); }
-  40%  { transform: scale(1.014) translateY(-1.0px) translateX(0); }
-  52%  { transform: scale(1.010) translateY(-0.7px) translateX(-0.2px); }
-  68%  { transform: scale(1.004) translateY(-0.3px) translateX(-0.1px); }
-  82%  { transform: scale(1.001) translateY(-0.1px) translateX(0.1px); }
+  10%  { transform: scale(1.002) translateY(-0.15px) translateX(0.1px); }
+  22%  { transform: scale(1.007) translateY(-0.45px) translateX(0.2px); }
+  34%  { transform: scale(1.012) translateY(-0.8px) translateX(0.25px); }
+  42%  { transform: scale(1.014) translateY(-1.0px) translateX(0.15px); }
+  50%  { transform: scale(1.013) translateY(-0.95px) translateX(0.05px); }
+  62%  { transform: scale(1.008) translateY(-0.55px) translateX(-0.1px); }
+  74%  { transform: scale(1.003) translateY(-0.2px) translateX(-0.15px); }
+  86%  { transform: scale(1.001) translateY(-0.05px) translateX(-0.05px); }
   100% { transform: scale(1) translateY(0) translateX(0); }
 }
 
 @keyframes houndChest {
   0%   { transform: rotate(0deg) translateY(0) scale(1); }
-  15%  { transform: rotate(-0.2deg) translateY(-0.3px) scale(1.005); }
-  32%  { transform: rotate(-0.5deg) translateY(-0.7px) scale(1.012); }
-  42%  { transform: rotate(-0.5deg) translateY(-0.7px) scale(1.010); }
-  58%  { transform: rotate(-0.2deg) translateY(-0.3px) scale(1.005); }
-  75%  { transform: rotate(-0.05deg) translateY(-0.1px) scale(1.001); }
+  12%  { transform: rotate(-0.1deg) translateY(-0.15px) scale(1.002); }
+  26%  { transform: rotate(-0.3deg) translateY(-0.45px) scale(1.007); }
+  38%  { transform: rotate(-0.5deg) translateY(-0.7px) scale(1.012); }
+  46%  { transform: rotate(-0.5deg) translateY(-0.7px) scale(1.011); }
+  58%  { transform: rotate(-0.3deg) translateY(-0.4px) scale(1.007); }
+  70%  { transform: rotate(-0.12deg) translateY(-0.15px) scale(1.003); }
+  84%  { transform: rotate(-0.03deg) translateY(-0.03px) scale(1.001); }
   100% { transform: rotate(0deg) translateY(0) scale(1); }
 }
 
 @keyframes houndHaunch {
   0%   { transform: rotate(0deg) translateY(0) scale(1); }
-  18%  { transform: rotate(0.15deg) translateY(-0.1px) scale(1.003); }
-  38%  { transform: rotate(0.35deg) translateY(-0.3px) scale(1.008); }
-  50%  { transform: rotate(0.35deg) translateY(-0.3px) scale(1.007); }
-  65%  { transform: rotate(0.15deg) translateY(-0.1px) scale(1.003); }
-  82%  { transform: rotate(0.03deg) translateY(0) scale(1.001); }
+  14%  { transform: rotate(0.06deg) translateY(-0.04px) scale(1.001); }
+  28%  { transform: rotate(0.2deg) translateY(-0.15px) scale(1.004); }
+  40%  { transform: rotate(0.35deg) translateY(-0.3px) scale(1.008); }
+  50%  { transform: rotate(0.34deg) translateY(-0.28px) scale(1.007); }
+  64%  { transform: rotate(0.18deg) translateY(-0.12px) scale(1.004); }
+  78%  { transform: rotate(0.06deg) translateY(-0.03px) scale(1.001); }
   100% { transform: rotate(0deg) translateY(0) scale(1); }
 }
 
 @keyframes houndSpine {
   0%   { transform: rotate(0deg) translateY(0) scaleY(1); }
-  20%  { transform: rotate(-0.15deg) translateY(-0.4px) scaleY(1.004); }
-  38%  { transform: rotate(-0.35deg) translateY(-0.8px) scaleY(1.008); }
-  50%  { transform: rotate(-0.3deg) translateY(-0.7px) scaleY(1.006); }
-  68%  { transform: rotate(-0.1deg) translateY(-0.2px) scaleY(1.002); }
+  14%  { transform: rotate(-0.06deg) translateY(-0.2px) scaleY(1.002); }
+  28%  { transform: rotate(-0.2deg) translateY(-0.5px) scaleY(1.005); }
+  40%  { transform: rotate(-0.35deg) translateY(-0.8px) scaleY(1.008); }
+  50%  { transform: rotate(-0.3deg) translateY(-0.7px) scaleY(1.007); }
+  64%  { transform: rotate(-0.15deg) translateY(-0.35px) scaleY(1.003); }
+  80%  { transform: rotate(-0.04deg) translateY(-0.08px) scaleY(1.001); }
   100% { transform: rotate(0deg) translateY(0) scaleY(1); }
 }
 
-/* ── SPIRAL GLOWS — breathe-pulse on the two swirl marks ── */
+/* ── SPIRAL GLOWS — breathe-synced pulse ── */
 @keyframes houndSpiralPulse {
   0%   { transform: scale(1) rotate(0deg); }
-  20%  { transform: scale(1.008) rotate(0.4deg); }
-  40%  { transform: scale(1.018) rotate(0.8deg); }
-  55%  { transform: scale(1.012) rotate(0.5deg); }
-  72%  { transform: scale(1.003) rotate(0.15deg); }
+  16%  { transform: scale(1.004) rotate(0.2deg); }
+  34%  { transform: scale(1.012) rotate(0.6deg); }
+  46%  { transform: scale(1.018) rotate(0.8deg); }
+  56%  { transform: scale(1.014) rotate(0.6deg); }
+  70%  { transform: scale(1.006) rotate(0.25deg); }
+  86%  { transform: scale(1.001) rotate(0.05deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
 
-/* ── UPPER CHAIN ── */
+/* ── UPPER CHAIN — head leads, neck follows at ~55% amplitude ──
+   
+   Head: predatory micro-sway. Key change from v9: the old
+   -2.5° snap at 16% is replaced by a gradual arc with a
+   brief hold at extremes. Living things decelerate before
+   reversing direction — they don't bounce like a spring. */
 
 @keyframes houndNeck {
   0%   { transform: rotate(0deg) translateY(0) scale(1); }
-  15%  { transform: rotate(-0.3deg) translateY(-0.5px) scale(1.003); }
-  32%  { transform: rotate(-0.8deg) translateY(-1.1px) scale(1.006); }
-  42%  { transform: rotate(-0.7deg) translateY(-0.9px) scale(1.005); }
-  58%  { transform: rotate(-0.2deg) translateY(-0.3px) scale(1.002); }
-  75%  { transform: rotate(0.08deg) translateY(0) scale(1); }
+  10%  { transform: rotate(-0.12deg) translateY(-0.2px) scale(1.001); }
+  22%  { transform: rotate(-0.4deg) translateY(-0.55px) scale(1.004); }
+  34%  { transform: rotate(-0.7deg) translateY(-0.9px) scale(1.006); }
+  44%  { transform: rotate(-0.65deg) translateY(-0.8px) scale(1.005); }
+  56%  { transform: rotate(-0.3deg) translateY(-0.4px) scale(1.003); }
+  68%  { transform: rotate(-0.08deg) translateY(-0.1px) scale(1.001); }
+  80%  { transform: rotate(0.04deg) translateY(0px) scale(1); }
+  92%  { transform: rotate(0.01deg) translateY(0px) scale(1); }
   100% { transform: rotate(0deg) translateY(0) scale(1); }
 }
 
 @keyframes houndHead {
   0%   { transform: rotate(0deg) translateY(0); }
-  7%   { transform: rotate(-1.0deg) translateY(-1.0px); }
-  16%  { transform: rotate(-2.5deg) translateY(-2.8px); }
-  30%  { transform: rotate(-0.5deg) translateY(-0.4px); }
-  42%  { transform: rotate(0.4deg) translateY(0.2px); }
-  58%  { transform: rotate(0deg) translateY(0); }
+  6%   { transform: rotate(-0.4deg) translateY(-0.4px); }
+  14%  { transform: rotate(-1.2deg) translateY(-1.4px); }
+  22%  { transform: rotate(-1.8deg) translateY(-2.2px); }
+  30%  { transform: rotate(-1.6deg) translateY(-1.8px); }
+  40%  { transform: rotate(-0.5deg) translateY(-0.4px); }
+  50%  { transform: rotate(0.2deg) translateY(0.1px); }
+  58%  { transform: rotate(0.15deg) translateY(0.05px); }
+  68%  { transform: rotate(-0.2deg) translateY(-0.2px); }
   78%  { transform: rotate(-0.1deg) translateY(-0.08px); }
+  90%  { transform: rotate(-0.02deg) translateY(-0.01px); }
   100% { transform: rotate(0deg) translateY(0); }
 }
 
+/* ── JAW — gentler open/close ──
+   v9 had a harsh snap from -1.6° to +3.2° (4.8° swing in 20%
+   of cycle). Now the jaw drifts open gradually, holds slightly
+   at max open, then eases shut. Reads as slow breathing, not
+   snapping at prey. */
+
 @keyframes houndJaw {
   0%   { transform: rotate(0deg) translateY(0); }
-  12%  { transform: rotate(-0.6deg) translateY(-0.5px); }
-  22%  { transform: rotate(-1.6deg) translateY(-1.4px); }
-  30%  { transform: rotate(0.8deg) translateY(0); }
-  42%  { transform: rotate(3.2deg) translateY(0.8px); }
-  54%  { transform: rotate(1.4deg) translateY(0.3px); }
-  68%  { transform: rotate(0.1deg) translateY(0); }
+  8%   { transform: rotate(-0.3deg) translateY(-0.2px); }
+  18%  { transform: rotate(-0.8deg) translateY(-0.6px); }
+  28%  { transform: rotate(-0.2deg) translateY(-0.1px); }
+  38%  { transform: rotate(1.0deg) translateY(0.3px); }
+  48%  { transform: rotate(2.2deg) translateY(0.6px); }
+  56%  { transform: rotate(2.0deg) translateY(0.5px); }
+  66%  { transform: rotate(1.0deg) translateY(0.2px); }
+  78%  { transform: rotate(0.2deg) translateY(0.02px); }
+  90%  { transform: rotate(0.03deg) translateY(0); }
   100% { transform: rotate(0deg) translateY(0); }
 }
 
 /* ── DETAIL PARTS ── */
 
-/* Horns: micro-tremor from head motion, faster frequency.
-   Amplifies the head's movement at the tips. */
+/* Horns: reduced amplitude from v9. These are rigid bone —
+   they should barely move, just transmitting the head's
+   motion as a faint vibration at the tips. */
 @keyframes houndHorns {
   0%   { transform: rotate(0deg) translateY(0); }
-  6%   { transform: rotate(-0.6deg) translateY(-0.5px); }
-  14%  { transform: rotate(-1.8deg) translateY(-1.6px); }
-  22%  { transform: rotate(-0.8deg) translateY(-0.6px); }
-  32%  { transform: rotate(0.5deg) translateY(0.3px); }
-  44%  { transform: rotate(-0.2deg) translateY(-0.1px); }
-  56%  { transform: rotate(0.3deg) translateY(0.1px); }
-  68%  { transform: rotate(-0.1deg) translateY(-0.05px); }
+  8%   { transform: rotate(-0.25deg) translateY(-0.2px); }
+  18%  { transform: rotate(-0.8deg) translateY(-0.8px); }
+  28%  { transform: rotate(-1.2deg) translateY(-1.2px); }
+  36%  { transform: rotate(-1.0deg) translateY(-0.9px); }
+  46%  { transform: rotate(-0.3deg) translateY(-0.2px); }
+  56%  { transform: rotate(0.1deg) translateY(0.05px); }
+  68%  { transform: rotate(-0.1deg) translateY(-0.06px); }
+  80%  { transform: rotate(-0.03deg) translateY(-0.02px); }
   100% { transform: rotate(0deg) translateY(0); }
 }
 
-/* Mouth fire: rapid flicker + drip sway. Independent fast cycle. */
+/* Mouth fire: softer flicker. v9 had rigid oscillation — now
+   it drifts like actual flame: irregular, organic sway with
+   scale breathing. */
 @keyframes houndMouthFire {
   0%   { transform: rotate(0deg) scale(1) translateY(0); }
-  10%  { transform: rotate(1.2deg) scale(1.02) translateY(0.4px); }
-  22%  { transform: rotate(-0.8deg) scale(0.97) translateY(-0.2px); }
-  35%  { transform: rotate(1.8deg) scale(1.03) translateY(0.6px); }
-  48%  { transform: rotate(-0.5deg) scale(0.99) translateY(0.1px); }
-  62%  { transform: rotate(1.0deg) scale(1.015) translateY(0.3px); }
-  78%  { transform: rotate(-0.3deg) scale(0.985) translateY(-0.1px); }
+  12%  { transform: rotate(0.6deg) scale(1.01) translateY(0.2px); }
+  24%  { transform: rotate(-0.4deg) scale(0.985) translateY(-0.1px); }
+  36%  { transform: rotate(1.0deg) scale(1.02) translateY(0.4px); }
+  48%  { transform: rotate(0.2deg) scale(1.005) translateY(0.15px); }
+  58%  { transform: rotate(-0.6deg) scale(0.99) translateY(-0.05px); }
+  70%  { transform: rotate(0.8deg) scale(1.015) translateY(0.3px); }
+  82%  { transform: rotate(-0.2deg) scale(0.995) translateY(0.05px); }
+  92%  { transform: rotate(0.15deg) scale(1.003) translateY(0.08px); }
   100% { transform: rotate(0deg) scale(1) translateY(0); }
 }
 
-/* ── LEGS — prowl coil ── */
+/* ── LEGS — prowl coil ──
+   Added subtle rotation so the shoulder/hip joint reads
+   as absorbing the body's breathing motion. Reduced
+   overall translation for more grounded feel. */
 
 @keyframes houndFrontLeg {
   0%   { transform: translateX(0) translateY(0) rotate(0deg); }
-  12%  { transform: translateX(-1.0px) translateY(0.4px) rotate(-0.6deg); }
-  28%  { transform: translateX(-2.0px) translateY(1.2px) rotate(-1.4deg); }
-  40%  { transform: translateX(-1.8px) translateY(1.0px) rotate(-1.2deg); }
-  55%  { transform: translateX(-0.5px) translateY(0.2px) rotate(-0.3deg); }
-  70%  { transform: translateX(0.6px) translateY(-0.3px) rotate(0.3deg); }
-  85%  { transform: translateX(0.2px) translateY(-0.1px) rotate(0.1deg); }
+  10%  { transform: translateX(-0.4px) translateY(0.15px) rotate(-0.2deg); }
+  24%  { transform: translateX(-1.2px) translateY(0.6px) rotate(-0.7deg); }
+  38%  { transform: translateX(-1.8px) translateY(1.0px) rotate(-1.1deg); }
+  48%  { transform: translateX(-1.6px) translateY(0.85px) rotate(-0.9deg); }
+  60%  { transform: translateX(-0.7px) translateY(0.3px) rotate(-0.4deg); }
+  72%  { transform: translateX(0.1px) translateY(-0.05px) rotate(0.06deg); }
+  84%  { transform: translateX(0.3px) translateY(-0.1px) rotate(0.15deg); }
+  94%  { transform: translateX(0.08px) translateY(-0.02px) rotate(0.03deg); }
   100% { transform: translateX(0) translateY(0) rotate(0deg); }
 }
 
 @keyframes houndRearLeg {
   0%   { transform: translateX(0) translateY(0) rotate(0deg); }
-  12%  { transform: translateX(0.8px) translateY(0.3px) rotate(0.5deg); }
-  28%  { transform: translateX(1.6px) translateY(1.0px) rotate(1.2deg); }
-  40%  { transform: translateX(1.4px) translateY(0.8px) rotate(1.0deg); }
-  55%  { transform: translateX(0.4px) translateY(0.2px) rotate(0.25deg); }
-  70%  { transform: translateX(-0.5px) translateY(-0.2px) rotate(-0.25deg); }
-  85%  { transform: translateX(-0.15px) translateY(-0.05px) rotate(-0.08deg); }
+  10%  { transform: translateX(0.3px) translateY(0.1px) rotate(0.15deg); }
+  24%  { transform: translateX(0.9px) translateY(0.5px) rotate(0.6deg); }
+  38%  { transform: translateX(1.4px) translateY(0.85px) rotate(1.0deg); }
+  48%  { transform: translateX(1.2px) translateY(0.7px) rotate(0.8deg); }
+  60%  { transform: translateX(0.5px) translateY(0.25px) rotate(0.3deg); }
+  72%  { transform: translateX(-0.1px) translateY(-0.04px) rotate(-0.06deg); }
+  84%  { transform: translateX(-0.25px) translateY(-0.08px) rotate(-0.12deg); }
+  94%  { transform: translateX(-0.06px) translateY(-0.01px) rotate(-0.02deg); }
   100% { transform: translateX(0) translateY(0) rotate(0deg); }
 }
 
-/* ── PAWS — grip and flex ── */
+/* ── PAWS — weight-bearing grip ──
+   Paws press harder into the ground during inhale peak
+   (body rises slightly, weight shifts forward/back).
+   The scaleX "toe spread" is more gradual now. */
 
-/* Front paws: claws dig in on the forward lean, spread on settle.
-   Slight scale = toes spreading. Rotation = wrist flex. */
 @keyframes houndFrontPaw {
   0%   { transform: rotate(0deg) scaleX(1) translateY(0); }
-  15%  { transform: rotate(-0.8deg) scaleX(1.01) translateY(0.3px); }
-  30%  { transform: rotate(-1.8deg) scaleX(1.025) translateY(0.8px); }
-  42%  { transform: rotate(-1.4deg) scaleX(1.02) translateY(0.6px); }
-  58%  { transform: rotate(-0.4deg) scaleX(1.005) translateY(0.2px); }
-  75%  { transform: rotate(0.3deg) scaleX(0.998) translateY(-0.1px); }
+  12%  { transform: rotate(-0.3deg) scaleX(1.004) translateY(0.1px); }
+  26%  { transform: rotate(-1.0deg) scaleX(1.012) translateY(0.4px); }
+  40%  { transform: rotate(-1.6deg) scaleX(1.022) translateY(0.7px); }
+  50%  { transform: rotate(-1.4deg) scaleX(1.018) translateY(0.6px); }
+  64%  { transform: rotate(-0.6deg) scaleX(1.008) translateY(0.25px); }
+  78%  { transform: rotate(-0.1deg) scaleX(1.001) translateY(0.04px); }
+  90%  { transform: rotate(0.1deg) scaleX(0.999) translateY(-0.02px); }
   100% { transform: rotate(0deg) scaleX(1) translateY(0); }
 }
 
-/* Rear paws: push off on the crouch, claws grip ground. */
 @keyframes houndRearPaw {
   0%   { transform: rotate(0deg) scaleX(1) translateY(0); }
-  15%  { transform: rotate(0.6deg) scaleX(1.008) translateY(0.2px); }
-  30%  { transform: rotate(1.4deg) scaleX(1.02) translateY(0.7px); }
-  42%  { transform: rotate(1.1deg) scaleX(1.015) translateY(0.5px); }
-  58%  { transform: rotate(0.3deg) scaleX(1.003) translateY(0.15px); }
-  75%  { transform: rotate(-0.2deg) scaleX(0.998) translateY(-0.1px); }
+  12%  { transform: rotate(0.2deg) scaleX(1.003) translateY(0.08px); }
+  26%  { transform: rotate(0.7deg) scaleX(1.01) translateY(0.35px); }
+  40%  { transform: rotate(1.2deg) scaleX(1.018) translateY(0.6px); }
+  50%  { transform: rotate(1.1deg) scaleX(1.014) translateY(0.5px); }
+  64%  { transform: rotate(0.5deg) scaleX(1.006) translateY(0.2px); }
+  78%  { transform: rotate(0.1deg) scaleX(1.001) translateY(0.03px); }
+  90%  { transform: rotate(-0.08deg) scaleX(0.999) translateY(-0.02px); }
   100% { transform: rotate(0deg) scaleX(1) translateY(0); }
 }
 
-/* ── TAIL — chaotic fire flicker ── */
+/* ── TAIL — single lazy sway ──
+   ONE smooth arc to one side (0%→38%), brief hold at peak,
+   slow drift back (50%→90%), settle (90%→100%).
+   Removed scale — it was adding visual noise on a part
+   this thin. Just rotation + minimal translateX. */
 
 @keyframes houndTail {
-  0%   { transform: rotate(0deg) scale(1) translateX(0); }
-  12%  { transform: rotate(1.0deg) scale(1.008) translateX(0.8px); }
-  26%  { transform: rotate(-0.6deg) scale(0.996) translateX(-0.4px); }
-  40%  { transform: rotate(1.4deg) scale(1.012) translateX(1.0px); }
-  56%  { transform: rotate(-0.4deg) scale(1.002) translateX(-0.3px); }
-  72%  { transform: rotate(0.8deg) scale(1.006) translateX(0.6px); }
-  86%  { transform: rotate(-0.2deg) scale(0.998) translateX(-0.2px); }
-  100% { transform: rotate(0deg) scale(1) translateX(0); }
+  0%   { transform: rotate(0deg) translateX(0); }
+  10%  { transform: rotate(0.4deg) translateX(0.3px); }
+  22%  { transform: rotate(1.0deg) translateX(0.7px); }
+  34%  { transform: rotate(1.4deg) translateX(0.9px); }
+  44%  { transform: rotate(1.3deg) translateX(0.8px); }
+  56%  { transform: rotate(0.8deg) translateX(0.5px); }
+  68%  { transform: rotate(0.3deg) translateX(0.2px); }
+  80%  { transform: rotate(0.05deg) translateX(0.03px); }
+  92%  { transform: rotate(-0.05deg) translateX(-0.02px); }
+  100% { transform: rotate(0deg) translateX(0); }
 }
 
 /* ── GROUND GLOW — breathe-synced ambient pulse ── */
 
 @keyframes houndGround {
   0%   { transform: scaleX(1) scaleY(1); opacity: 1; }
-  20%  { transform: scaleX(1.008) scaleY(1.04); opacity: 1; }
-  40%  { transform: scaleX(1.015) scaleY(1.08); opacity: 1; }
-  55%  { transform: scaleX(1.012) scaleY(1.06); opacity: 1; }
-  75%  { transform: scaleX(1.003) scaleY(1.02); opacity: 1; }
+  16%  { transform: scaleX(1.004) scaleY(1.02); opacity: 1; }
+  34%  { transform: scaleX(1.01) scaleY(1.05); opacity: 1; }
+  46%  { transform: scaleX(1.015) scaleY(1.08); opacity: 1; }
+  56%  { transform: scaleX(1.012) scaleY(1.06); opacity: 1; }
+  70%  { transform: scaleX(1.005) scaleY(1.03); opacity: 1; }
+  86%  { transform: scaleX(1.001) scaleY(1.005); opacity: 1; }
   100% { transform: scaleX(1) scaleY(1); opacity: 1; }
 }
 
@@ -431,7 +492,6 @@ function HoundLayer({ src, active, loaded, onLoad, variant, animate, debug }) {
         filter: active ? glow : "none",
       }}
     >
-      {/* Static base */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
         <img
           src={src} alt="" onLoad={onLoad} draggable={false}
@@ -439,7 +499,6 @@ function HoundLayer({ src, active, loaded, onLoad, variant, animate, debug }) {
         />
       </div>
 
-      {/* Animated skeleton */}
       {PARTS.map((p) => (
         <div
           key={p.id}

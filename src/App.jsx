@@ -1,6 +1,9 @@
 import DragonRig from "./DragonRig";
 import HellhoundRig from "./HellhoundRig";
 import QuestBladeLogo from "./QuestBladeLogo";
+import NoteStreamPreview from "./NoteStreamPreview";
+import { QuestOnePreview, IoTLogPreview, TerraformPreview } from "./ProjectPreviews";
+import { PrometheusPreview, JenkinsPreview, JUnitPreview, ProjectsPreview } from "./SecondaryPreviews";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 // ═══════════════════════════════════════════════════════
@@ -118,38 +121,35 @@ const Icons = {
 // ═══════════════════════════════════════════════════════
 
 function ScrollProgress() {
-  const [progress, setProgress] = useState(0);
+  const barRef = useRef(null);
+ 
   useEffect(() => {
+    let ticking = false;
+ 
     const update = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(h > 0 ? (window.scrollY / h) * 100 : 0);
+      const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+      if (barRef.current) {
+        barRef.current.style.width = `${pct}%`;
+      }
+      ticking = false;
     };
-    window.addEventListener("scroll", update, { passive: true });
+ 
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+ 
+    window.addEventListener("scroll", onScroll, { passive: true });
     update();
-    return () => window.removeEventListener("scroll", update);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
+ 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "3px",
-      zIndex: 10001,
-      background: "transparent",
-      pointerEvents: "none",
-    }}>
-      <div style={{
-        height: "100%",
-        width: `${progress}%`,
-        background: "linear-gradient(90deg, var(--neon), var(--orange), var(--neon))",
-        backgroundSize: "200% 100%",
-        animation: "gradientShift 3s ease infinite",
-        boxShadow: `0 0 12px rgba(var(--neon-rgb), 0.5), 0 0 4px rgba(var(--neon-rgb), 0.3)`,
-        transition: "width 80ms linear",
-        borderRadius: "0 2px 2px 0",
-      }} />
+    <div className="scroll-progress-track">
+      <div ref={barRef} className="scroll-progress-fill" style={{ width: "0%" }} />
     </div>
   );
 }
@@ -600,38 +600,35 @@ export default function App() {
     ],
   }), []);
 
-  const primaryProjects = useMemo(() => [
+const primaryProjects = useMemo(() => [
     {
       title: "QuestOne Site", tag: "WEB", tagColor: "var(--orange)",
       desc: "Portfolio and cloud landing page showcasing DevOps projects and professional presence. Deployed on Vercel.",
-      tech: ["React", "JavaScript", "CSS"], href: "https://github.com/blackapple805/questone-site",
-      previewType: "browser",
-      previewLines: ["⚡ questone.cloud", "→ React + Vite", "→ Cyberpunk UI", "→ Deployed on Vercel"],
-      previewTitle: "questone.cloud",
+      tech: ["React", "JavaScript", "CSS"],
+      href: "https://github.com/blackapple805/questone-site",
+      Preview: QuestOnePreview,
     },
     {
       title: "IoT Log", tag: "IOT", tagColor: "var(--pink)",
       desc: "ESP8266 data pipeline that pushes JSON sensor readings directly to GitHub. Hardware meets version control.",
-      tech: ["ESP8266", "JSON", "GitHub API"], href: "https://github.com/blackapple805/iot-log",
-      previewType: "terminal",
-      previewLines: ["$ cat sensor_data.json", '{"temp": 72.4, "humidity": 45}', "$ git push origin main", "→ Sensor data committed"],
-      previewTitle: "iot-log",
+      tech: ["ESP8266", "JSON", "GitHub API"],
+      href: "https://github.com/blackapple805/iot-log",
+      Preview: IoTLogPreview,
     },
     {
       title: "Terraform AWS VPC", tag: "CLOUD", tagColor: "var(--blue)",
       desc: "Customized Terraform module for provisioning AWS VPC resources. Repeatable, scalable infrastructure as code.",
-      tech: ["Terraform", "AWS", "HCL"], href: "https://github.com/blackapple805/terraform-aws-vpc",
-      previewType: "terminal",
-      previewLines: ["$ terraform plan", "→ 12 resources to add", "$ terraform apply", "→ VPC created ✓"],
-      previewTitle: "terraform-aws-vpc",
+      tech: ["Terraform", "AWS", "HCL"],
+      href: "https://github.com/blackapple805/terraform-aws-vpc",
+      Preview: TerraformPreview,
     },
   ], []);
 
-  const secondaryProjects = useMemo(() => [
-    { title: "Prometheus", tag: "MONITORING", tagColor: "var(--neon)", desc: "Metrics collection and infrastructure observability at scale.", tech: ["Prometheus", "Metrics"], href: "https://github.com/blackapple805/prometheus" },
-    { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Pipeline configuration and continuous integration workflows.", tech: ["Jenkins", "Java"], href: "https://github.com/blackapple805/jenkins" },
-    { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Plugin architecture and automated test result reporting.", tech: ["Java", "JUnit"], href: "https://github.com/blackapple805/junit-plugin" },
-    { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "Python scripts, automation tools, and prototypes.", tech: ["Python", "Automation"], href: "https://github.com/blackapple805/Projects" },
+ const secondaryProjects = useMemo(() => [
+    { title: "Prometheus", tag: "MONITORING", tagColor: "var(--neon)", desc: "Metrics collection and infrastructure observability at scale.", tech: ["Prometheus", "Metrics"], href: "https://github.com/blackapple805/prometheus", Preview: PrometheusPreview },
+    { title: "Jenkins", tag: "CI/CD", tagColor: "var(--purple)", desc: "Pipeline configuration and continuous integration workflows.", tech: ["Jenkins", "Java"], href: "https://github.com/blackapple805/jenkins", Preview: JenkinsPreview },
+    { title: "JUnit Plugin", tag: "TESTING", tagColor: "var(--yellow)", desc: "Plugin architecture and automated test result reporting.", tech: ["Java", "JUnit"], href: "https://github.com/blackapple805/junit-plugin", Preview: JUnitPreview },
+    { title: "Projects & Portfolio", tag: "COLLECTION", tagColor: "var(--orange)", desc: "Python scripts, automation tools, and prototypes.", tech: ["Python", "Automation"], href: "https://github.com/blackapple805/Projects", Preview: ProjectsPreview },
   ], []);
 
   const education = useMemo(() => [
@@ -895,15 +892,11 @@ export default function App() {
                 {featuredProject.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
               </div>
             </div>
-            <LivePreview
-              type="terminal"
-              title="notestream"
-              lines={featuredProject.previewLines}
-            />
+           <NoteStreamPreview />
           </a>
         </Reveal>
 
-        {/* PRIMARY — 3 medium cards with live previews */}
+      {/* PRIMARY — 3 medium cards with custom previews */}
         <div className="projects-grid" style={{ marginTop: "1.25rem" }}>
           {primaryProjects.map((proj, i) => (
             <Reveal key={proj.title} delay={i * 120} type="rotate">
@@ -919,25 +912,18 @@ export default function App() {
                     {proj.tech.map(t => <span key={t} className="skill-tag">{t}</span>)}
                   </div>
                 </div>
-                {proj.previewLines && (
-                  <LivePreview
-                    type={proj.previewType || "terminal"}
-                    title={proj.previewTitle || proj.title}
-                    lines={proj.previewLines}
-                  />
+                {proj.Preview && (
+                  <div style={{ marginTop: "1.25rem" }}>
+                    <proj.Preview />
+                  </div>
                 )}
               </a>
             </Reveal>
           ))}
         </div>
-
-        {/* SECONDARY — 4 compact cards */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "1rem",
-          marginTop: "1.25rem",
-        }}>
+ 
+      {/* SECONDARY — 4 compact cards with mini previews */}
+        <div className="secondary-grid">
           {secondaryProjects.map((proj, i) => (
             <Reveal key={proj.title} delay={i * 80} type="glitch">
               <a href={proj.href} target="_blank" rel="noopener noreferrer"
@@ -976,6 +962,11 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+                {proj.Preview && (
+                  <div style={{ marginTop: "1.25rem" }}>
+                    <proj.Preview />
+                  </div>
+                )}
               </a>
             </Reveal>
           ))}

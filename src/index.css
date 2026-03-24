@@ -2099,3 +2099,282 @@ html[data-theme="light"]{
     transform: translate3d(0, calc(var(--card-lift) * -1), 0);
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE RESPONSIVE v2 + SMOOTH SCROLL BAR
+   Append this to the END of index.css
+   ═══════════════════════════════════════════════════════ */
+
+
+/* ── SECONDARY GRID CLASS ──
+   Replaces the inline gridTemplateColumns so media
+   queries can override it. Add className="secondary-grid"
+   to the secondary projects wrapper div in App.jsx. */
+
+.secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+
+/* ── SCROLL PROGRESS — smoother ──
+   The old 80ms linear transition stuttered on fast scrolls.
+   This uses a spring-like ease with longer duration so the
+   bar flows instead of jumping. */
+
+.scroll-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 10001;
+  background: transparent;
+  pointer-events: none;
+}
+
+.scroll-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon), var(--orange));
+  box-shadow: 0 0 8px rgba(var(--neon-rgb), 0.4);
+  border-radius: 0 2px 2px 0;
+  /* KEY FIX: longer duration + spring ease = smooth flow */
+  transition: width 200ms cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: width;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   TABLET — max-width: 1024px
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .secondary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE — max-width: 768px
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* Secondary grid → single column */
+  .secondary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Section spacing */
+  .section {
+    padding: 4rem 1.25rem;
+  }
+
+  /* Section titles readable */
+  .section-title {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+  .section-desc {
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  /* About grid stacks */
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .about-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Skills grid → 1 col */
+  .skills-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .skill-card {
+    padding: 1.5rem 1.25rem;
+  }
+  .proficiency {
+    padding: 1.5rem 1.25rem;
+    margin-top: 2.5rem;
+  }
+  .prof-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Projects */
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .project-card {
+    padding: 1.5rem 1.25rem;
+    padding-top: 2.8rem;
+  }
+  .project-card.featured {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem 1.25rem;
+    padding-top: 2.8rem;
+  }
+  .project-card.featured p {
+    text-align: left;
+  }
+  .project-title {
+    font-size: 1.1rem;
+  }
+  .project-card p {
+    font-size: 0.9rem;
+  }
+
+  /* Contact → 1 col */
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .contact-card {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+  .contact-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+  }
+
+  /* Education */
+  .edu-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 2rem 1.25rem;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SMALL PHONE — max-width: 480px
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+
+  /* Tighter section padding */
+  .section {
+    padding: 3rem 1rem;
+  }
+
+  /* About stats → full width on tiny screens */
+  .about-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .stat-card {
+    padding: 1.25rem 1rem;
+  }
+  .stat-number {
+    font-size: 1.6rem;
+  }
+
+  /* Hero adjustments */
+  .hero {
+    padding: 5rem 1rem 2rem;
+  }
+  .hero-card {
+    padding: 1.5rem 1rem;
+    border-radius: 1rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 11vw, 3rem);
+  }
+  .hero-sub {
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+  .hero-tag {
+    font-size: 0.58rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  /* Buttons smaller */
+  .btn-neon, .btn-ghost {
+    padding: 0.7rem 1.25rem;
+    font-size: 0.82rem;
+  }
+
+  /* Project cards tighter */
+  .project-card {
+    padding: 1.25rem 1rem;
+    padding-top: 2.5rem;
+  }
+  .project-card.featured {
+    padding: 1.25rem 1rem;
+    padding-top: 2.5rem;
+    gap: 1.25rem;
+  }
+  .project-tag {
+    top: 0.75rem;
+    left: 0.75rem;
+    font-size: 0.5rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 0.6rem;
+  }
+  .section-label::before {
+    width: 20px;
+  }
+
+  /* Nav tighter */
+  .nav {
+    height: 60px;
+  }
+  .nav-inner {
+    height: 60px;
+    width: calc(100vw - 2rem);
+  }
+  .nav-links {
+    top: calc(60px - 1px);
+  }
+
+  /* Education tighter */
+  .edu-item {
+    grid-template-columns: 36px 1fr;
+    gap: 0.6rem;
+  }
+  .edu-rail {
+    width: 36px;
+  }
+  .edu-dot {
+    width: 28px;
+    height: 28px;
+    top: 1.25rem;
+  }
+  .edu-dot-inner {
+    width: 22px;
+    height: 22px;
+  }
+  .edu-card {
+    padding: 1.25rem 1rem;
+  }
+  .edu-card h3 {
+    font-size: 1rem;
+  }
+  .edu-card p {
+    font-size: 0.88rem;
+  }
+  .edu-meta {
+    font-size: 0.6rem;
+  }
+}

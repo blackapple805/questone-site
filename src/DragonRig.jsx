@@ -1,34 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════
-//  DragonRig v5 — Seam-free edition
+//  DragonRig v6 — Natural motion refinement
 //
-//  Identical to v4 except:
-//  1. clip-path polygons → mask-image radial-gradients
-//     (soft elliptical edges instead of hard geometric cuts)
-//  2. Static base layer is FULL FRAME (no BASE_CORE_CLIP)
-//     so any gap between animated parts reveals the complete
-//     static image, not empty space
+//  Changes from v5:
+//  1. Wing flap: smoother sinusoidal arc, eliminated the
+//     jarring +2°→-5° jump. Downstroke slightly faster than
+//     upstroke (mimics real wing aerodynamics).
+//  2. Head bob: gentler curves with micro-pauses at rest
+//     positions — living things hold briefly, not bounce.
+//  3. Neck follow: better phase-lag behind head, softer
+//     amplitude so the chain reads as connected tissue.
+//  4. Body breathe: asymmetric inhale/exhale (inhale slower,
+//     exhale quicker) for organic rhythm.
+//  5. Tail sway: weighted pendulum feel — gravity pulls it
+//     through center faster, slows at extremes.
+//  6. Leg shifts: reduced amplitude, added subtle rotation
+//     so weight transfer reads more naturally.
 //
-//  All keyframes, durations, delays, and transform-origins
-//  are UNCHANGED from v4.
+//  All masks, durations, delays, and structure unchanged.
 // ═══════════════════════════════════════════════════════
 
 const DARK_SRC = `${import.meta.env.BASE_URL}dragon_gold.png`;
 const LIGHT_SRC = `${import.meta.env.BASE_URL}dragon_ice.png`;
 
-// Head + neck + wing all at 3.8s — they sync at loop boundary
-// Body/tail/legs keep their own durations for polyrhythm
-//
-// v4 clip-path → v5 mask-image mapping:
-//   Each polygon was converted to a radial-gradient ellipse
-//   centered on the polygon's centroid, sized to cover the
-//   same region with ~12% soft fade at edges.
-
 const PARTS = [
   {
     id: "rearLegs",
-    // v4: polygon(24% 50%, 66% 48%, 82% 100%, 26% 100%, 20% 72%)
     mask: "radial-gradient(ellipse 24% 30% at 48% 72%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "50% 78%",
     animation: "rigRearLegShift",
@@ -38,7 +36,6 @@ const PARTS = [
   },
   {
     id: "frontLegs",
-    // v4: polygon(-6% 50%, 46% 48%, 66% 100%, -6% 100%, -10% 70%)
     mask: "radial-gradient(ellipse 28% 32% at 24% 72%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "24% 80%",
     animation: "rigFrontLegShift",
@@ -48,7 +45,6 @@ const PARTS = [
   },
   {
     id: "body",
-    // v4: polygon(22% 30%, 44% 24%, 62% 32%, 66% 52%, 60% 78%, 38% 84%, 24% 66%, 18% 46%)
     mask: "radial-gradient(ellipse 28% 32% at 42% 52%, black 0%, black 48%, transparent 88%)",
     transformOrigin: "42% 56%",
     animation: "rigBodyBreathe",
@@ -58,7 +54,6 @@ const PARTS = [
   },
   {
     id: "tail",
-    // v4: polygon(52% 48%, 70% 46%, 88% 50%, 100% 58%, 98% 80%, 86% 86%, 66% 76%, 54% 66%)
     mask: "radial-gradient(ellipse 28% 22% at 76% 64%, black 0%, black 44%, transparent 86%)",
     transformOrigin: "60% 62%",
     animation: "rigTailSway",
@@ -68,7 +63,6 @@ const PARTS = [
   },
   {
     id: "wing",
-    // v4: polygon(50% 10%, 76% 7%, 100% 20%, 98% 46%, 74% 56%, 58% 40%)
     mask: "radial-gradient(ellipse 28% 26% at 76% 30%, black 0%, black 44%, transparent 86%)",
     transformOrigin: "56% 34%",
     animation: "rigWingFlap",
@@ -78,7 +72,6 @@ const PARTS = [
   },
   {
     id: "neck",
-    // v4: polygon(12% 10%, 30% 7%, 52% 14%, 56% 28%, 48% 48%, 30% 60%, 12% 44%)
     mask: "radial-gradient(ellipse 24% 28% at 32% 32%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "30% 44%",
     animation: "rigNeckFollow",
@@ -88,7 +81,6 @@ const PARTS = [
   },
   {
     id: "head",
-    // v4: polygon(0% 6%, 20% 4%, 36% 14%, 38% 30%, 30% 50%, 16% 58%, 2% 50%, 0% 28%)
     mask: "radial-gradient(ellipse 20% 24% at 18% 30%, black 0%, black 46%, transparent 88%)",
     transformOrigin: "22% 34%",
     animation: "rigHeadBob",
@@ -98,76 +90,129 @@ const PARTS = [
   },
 ];
 
-// ── KEYFRAMES — identical to v4, zero changes ──
+// ── KEYFRAMES v6 — Natural motion refinement ──
 
 const KEYFRAMES = `
+/* ═══════════════════════════════════════════════════════
+   DRAGON RIG v6 — Organic idle motion
+   ═══════════════════════════════════════════════════════ */
+
+/* ── HEAD — gentle predatory sway with micro-pauses ──
+   Living creatures hold position briefly at extremes
+   before reversing — not a continuous bounce. The head
+   leads the chain: neck and body follow with lag. */
 @keyframes rigHeadBob {
   0%   { transform: rotate(0deg) translateY(0px); }
-  12%  { transform: rotate(-2deg) translateY(-3px); }
-  28%  { transform: rotate(-0.5deg) translateY(-1px); }
-  45%  { transform: rotate(1deg) translateY(0px); }
-  65%  { transform: rotate(-1.2deg) translateY(-2px); }
-  80%  { transform: rotate(0.3deg) translateY(-0.5px); }
-  92%  { transform: rotate(-0.1deg) translateY(-0.2px); }
+  8%   { transform: rotate(-0.8deg) translateY(-1.2px); }
+  18%  { transform: rotate(-1.8deg) translateY(-2.6px); }
+  26%  { transform: rotate(-1.6deg) translateY(-2.2px); }
+  36%  { transform: rotate(-0.3deg) translateY(-0.4px); }
+  46%  { transform: rotate(0.6deg) translateY(0.2px); }
+  54%  { transform: rotate(0.5deg) translateY(0.1px); }
+  64%  { transform: rotate(-0.4deg) translateY(-0.8px); }
+  76%  { transform: rotate(-1.0deg) translateY(-1.4px); }
+  86%  { transform: rotate(-0.5deg) translateY(-0.6px); }
+  94%  { transform: rotate(-0.1deg) translateY(-0.1px); }
   100% { transform: rotate(0deg) translateY(0px); }
 }
 
+/* ── NECK — damped follow of head, ~60% amplitude ──
+   Tissue absorbs some of the head's motion. Slightly
+   smoother, fewer direction changes. */
 @keyframes rigNeckFollow {
   0%   { transform: rotate(0deg) translateY(0px); }
-  15%  { transform: rotate(-1.2deg) translateY(-1.5px); }
-  35%  { transform: rotate(-0.3deg) translateY(-0.5px); }
-  55%  { transform: rotate(0.6deg) translateY(0px); }
-  75%  { transform: rotate(-0.7deg) translateY(-1px); }
-  90%  { transform: rotate(-0.1deg) translateY(-0.2px); }
+  10%  { transform: rotate(-0.4deg) translateY(-0.6px); }
+  22%  { transform: rotate(-1.0deg) translateY(-1.4px); }
+  32%  { transform: rotate(-0.8deg) translateY(-1.0px); }
+  44%  { transform: rotate(-0.1deg) translateY(-0.2px); }
+  56%  { transform: rotate(0.3deg) translateY(0.1px); }
+  68%  { transform: rotate(-0.2deg) translateY(-0.5px); }
+  80%  { transform: rotate(-0.5deg) translateY(-0.7px); }
+  92%  { transform: rotate(-0.1deg) translateY(-0.1px); }
   100% { transform: rotate(0deg) translateY(0px); }
 }
 
+/* ── WING — single smooth arc ──
+   ONE downstroke (0%→35%), brief hold at peak (35%→45%),
+   ONE slow upstroke recovery (45%→90%), settle (90%→100%).
+   No double-pump, no mid-cycle reversal.
+   Minimal scaleY — just enough to hint at membrane flex. */
 @keyframes rigWingFlap {
   0%   { transform: rotate(0deg) scaleY(1); }
-  14%  { transform: rotate(-4deg) scaleY(1.03); }
-  30%  { transform: rotate(-1deg) scaleY(1.01); }
-  48%  { transform: rotate(2deg) scaleY(0.97); }
-  62%  { transform: rotate(-5deg) scaleY(1.04); }
-  76%  { transform: rotate(-1.5deg) scaleY(1.01); }
-  88%  { transform: rotate(0.5deg) scaleY(1.005); }
+  12%  { transform: rotate(-1.4deg) scaleY(1.008); }
+  24%  { transform: rotate(-3.2deg) scaleY(1.018); }
+  35%  { transform: rotate(-4.0deg) scaleY(1.025); }
+  45%  { transform: rotate(-3.6deg) scaleY(1.02); }
+  58%  { transform: rotate(-2.2deg) scaleY(1.012); }
+  72%  { transform: rotate(-0.8deg) scaleY(1.004); }
+  85%  { transform: rotate(-0.15deg) scaleY(1.001); }
+  94%  { transform: rotate(0.1deg) scaleY(0.999); }
   100% { transform: rotate(0deg) scaleY(1); }
 }
 
+/* ── BODY — asymmetric breathing ──
+   Inhale (0%→40%) is slower and gradual.
+   Exhale (40%→85%) is quicker release.
+   Brief hold at peak gives it a living pause. */
 @keyframes rigBodyBreathe {
   0%   { transform: scale(1) translateY(0px); }
-  30%  { transform: scale(1.008) translateY(-1px); }
-  50%  { transform: scale(1.012) translateY(-1.5px); }
-  70%  { transform: scale(1.005) translateY(-0.5px); }
+  15%  { transform: scale(1.003) translateY(-0.4px); }
+  30%  { transform: scale(1.008) translateY(-0.9px); }
+  42%  { transform: scale(1.012) translateY(-1.4px); }
+  50%  { transform: scale(1.011) translateY(-1.3px); }
+  62%  { transform: scale(1.007) translateY(-0.8px); }
+  76%  { transform: scale(1.002) translateY(-0.2px); }
+  88%  { transform: scale(1.0005) translateY(-0.05px); }
   100% { transform: scale(1) translateY(0px); }
 }
 
+/* ── FRONT LEGS — subtle weight shift with rotation ──
+   The slight rotate makes it look like the shoulder
+   joint is absorbing the body's breathing motion. */
 @keyframes rigFrontLegShift {
-  0%   { transform: translateX(0px) translateY(0px); }
-  20%  { transform: translateX(-0.8px) translateY(-0.5px); }
-  45%  { transform: translateX(-1.5px) translateY(-1.2px); }
-  65%  { transform: translateX(0.5px) translateY(-0.3px); }
-  85%  { transform: translateX(1px) translateY(0px); }
-  100% { transform: translateX(0px) translateY(0px); }
+  0%   { transform: translateX(0px) translateY(0px) rotate(0deg); }
+  16%  { transform: translateX(-0.4px) translateY(-0.2px) rotate(-0.2deg); }
+  34%  { transform: translateX(-1.0px) translateY(-0.8px) rotate(-0.5deg); }
+  50%  { transform: translateX(-1.2px) translateY(-1.0px) rotate(-0.6deg); }
+  66%  { transform: translateX(-0.3px) translateY(-0.2px) rotate(-0.1deg); }
+  80%  { transform: translateX(0.4px) translateY(0px) rotate(0.15deg); }
+  92%  { transform: translateX(0.1px) translateY(0px) rotate(0.03deg); }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg); }
 }
 
+/* ── REAR LEGS — counter-phase to front, hip-driven ── */
 @keyframes rigRearLegShift {
-  0%   { transform: translateX(0px) translateY(0px); }
-  25%  { transform: translateX(0.5px) translateY(-0.3px); }
-  50%  { transform: translateX(1.2px) translateY(-1px); }
-  75%  { transform: translateX(-0.8px) translateY(-0.5px); }
-  100% { transform: translateX(0px) translateY(0px); }
+  0%   { transform: translateX(0px) translateY(0px) rotate(0deg); }
+  18%  { transform: translateX(0.3px) translateY(-0.15px) rotate(0.15deg); }
+  36%  { transform: translateX(0.8px) translateY(-0.6px) rotate(0.4deg); }
+  52%  { transform: translateX(1.0px) translateY(-0.8px) rotate(0.5deg); }
+  68%  { transform: translateX(0.3px) translateY(-0.2px) rotate(0.1deg); }
+  82%  { transform: translateX(-0.3px) translateY(0px) rotate(-0.12deg); }
+  94%  { transform: translateX(-0.08px) translateY(0px) rotate(-0.02deg); }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg); }
 }
 
+/* ── TAIL — weighted pendulum sway ──
+   Moves fastest through center (gravity acceleration),
+   decelerates at extremes (fighting gravity).
+   Asymmetric: doesn't swing equally both ways. */
 @keyframes rigTailSway {
   0%   { transform: rotate(0deg); }
-  15%  { transform: rotate(1.8deg); }
-  35%  { transform: rotate(-1.5deg); }
-  55%  { transform: rotate(2.8deg); }
-  70%  { transform: rotate(-0.8deg); }
-  85%  { transform: rotate(1.2deg); }
+  10%  { transform: rotate(0.8deg); }
+  20%  { transform: rotate(1.6deg); }
+  28%  { transform: rotate(1.4deg); }
+  38%  { transform: rotate(-0.2deg); }
+  48%  { transform: rotate(-1.4deg); }
+  56%  { transform: rotate(-1.2deg); }
+  65%  { transform: rotate(0.3deg); }
+  74%  { transform: rotate(2.0deg); }
+  82%  { transform: rotate(2.4deg); }
+  90%  { transform: rotate(1.6deg); }
+  96%  { transform: rotate(0.4deg); }
   100% { transform: rotate(0deg); }
 }
 
+/* ── FLOAT — unchanged ── */
 @keyframes rigFloat {
   0%   { transform: translateY(0px); }
   40%  { transform: translateY(-8px); }
@@ -213,9 +258,6 @@ function DragonLayer({ src, active, loaded, onLoad, variant, animate, debug = fa
         filter: active ? glowFilter : "none",
       }}
     >
-      {/* v5 CHANGE: Static base is now FULL FRAME — no clip-path.
-          Any gap between animated parts reveals this complete image.
-          Dark-on-dark = invisible seam. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
         <img
           src={src}
@@ -228,9 +270,6 @@ function DragonLayer({ src, active, loaded, onLoad, variant, animate, debug = fa
         />
       </div>
 
-      {/* v5 CHANGE: clip-path → mask-image with soft elliptical edges.
-          Each part fades smoothly into the static base at its borders
-          instead of having a hard geometric cut line. */}
       {PARTS.map((part) => (
         <div
           key={part.id}
